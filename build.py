@@ -7,7 +7,7 @@
 reels_analysis.csv — таблиця з тетраді «Разбор хитов 5000».
 data.js — поточний файл даних із сайту (у ньому вже є обкладинки, теми, історія).
 """
-import csv, json, re, sys, math, base64, io, datetime as dt
+import csv, json, re, sys, os, math, base64, io, datetime as dt
 from collections import Counter, defaultdict
 from statistics import median
 
@@ -81,19 +81,41 @@ def cta_rule(cap):
     if re.search(r"підпиш|підписуй", s): return "Підписатися"
     return "Без заклику"
 
+# Теми корекційної сфери (перший збіг виграє)
 TOPIC_RULES = [
-    ("Розіграші й подарунки", r"розіграш|подарун|гайд у подарунок|безкоштовн\w* гайд"),
-    ("Курси й заходи для колег", r"колег|логопед(ам|ів)\b|супервіз|курс для|вебінар|конференц|педагог(ам|ів)|chill"),
-    ("Звуки й вимова", r"звук|артикуля|вимов|язич|гімнастик|автоматиз|постанов"),
-    ("Школа: читання, письмо, увага", r"школ|читан|письм|дисграф|дислекс|уваг|концентр|першоклас"),
-    ("Запуск мовлення, РАС, ЗПР", r"запуск|\bрас\b|\bзпр\b|аутиз|перші слова|не говорить|мовчун"),
-    ("Ознаки й вікові норми", r"ознак|норм[аиу]\b|сигнал|у \d+ рок|в \d+ рок|коли час|коли звертатис"),
-    ("Гумор і тренди", r"гумор|тренд|😂|🤣|жиза|так і живемо"),
-    ("Поведінка й емоції", r"поведін|емоці|істерик|каприз|гаджет|мультик"),
-    ("Особисте, команда, відгуки", r"дякуємо|команд|відгук|довір|річниц|день народж"),
-    ("Послуги: запис, як проходять заняття", r"запис|запрошуємо|консультац|діагностик|як проходить|наші заняття|вільні місця"),
-    ("Показ занять, ігри, вправи", r"гра\b|ігри|іграшк|вправ|розпаков|вдома з дитиною"),
+    ("Розіграші й подарунки", r"розіграш|подарун|гайд у подарунок|безкоштовн\w* (гайд|чек-?лист|трекер)"),
+    ("Курси й заходи для фахівців", r"колег|логопед(ам|ів)\b|фахівц(ям|ів)\b|супервіз|курс для|вебінар|конференц|педагог(ам|ів)|chill|інтенсив для"),
+    ("Гумор і тренди", r"гумор|тренд|😂|🤣|жиза|так і живемо|співпадіння з реальн"),
+    ("РАС, ЗПР, особливий розвиток", r"\bрас\b|аутиз|\bзпр\b|\bзрр\b|\baba\b|аба-|особлив\w* (потреб|дит)|інклюз|синдром|двц|альтернативн\w* комунік"),
+    ("Сенсорика й моторика", r"сенсор|моторик|ерготерап|координац|рівноваг|вестибул|пальчик|тактильн|гіперактивн\w* рук|рухов"),
+    ("Увага, СДУГ, нейропсихологія", r"сдуг|гіперактив|уваг|концентр|посидюч|нейропсихол|міжпівкул|пам.ят|відволіка"),
+    ("Емоції й поведінка", r"емоці|істерик|каприз|поведін|агрес|тривог|страх|саморегул|панічн|кусаєт|б.ється"),
+    ("Харчування й сон", r"харчув|вибірков\w* (їж|харч)|їсть|прикорм|жуван|\bсон\b|засина|сну\b|режим"),
+    ("Гаджети й екранний час", r"гаджет|мультик|телефон у руках|екранн|планшет|ютуб|youtube"),
+    ("Школа: читання, письмо, підготовка", r"школ|читан|письм|дисграф|дислекс|першоклас|до школи|переказ|почерк"),
+    ("Мовлення й звуки", r"звук|артикуля|вимов|язич|автоматиз|постанов|заїкан|запуск мовлен|перші слова|не говорить|мовчун|словник"),
+    ("Ознаки й вікові норми", r"ознак|норм[аиу]\b|сигнал|у \d+ рок|в \d+ рок|коли час|коли звертатис|бити тривогу"),
+    ("Батьківство й вигорання", r"мам\w* теж|батьківськ|вигоран|втома батьк|пауза для мам|ресурс мам"),
+    ("Особисте, команда, кейси", r"дякуємо|команд|відгук|довір|річниц|день народж|історія \w+|до і після|до/після|результат заняте?ь"),
+    ("Послуги й запис", r"запис|запрошуємо|консультац|діагностик|як проходить|наші заняття|вільні місця|єясла|онлайн-занят"),
+    ("Ігри й вправи вдома", r"\bгра\b|ігри|іграшк|вправ|розпаков|вдома з|зберігайте"),
 ]
+# Старі назви тем -> нові (для рилсів, розмічених раніше)
+OLD2NEW = {
+    "Звуки й вимова": "Мовлення й звуки", "Запуск мовлення, РАС, ЗПР": "Мовлення й звуки",
+    "Школа: читання, письмо, увага": "Школа: читання, письмо, підготовка", "Поведінка й емоції": "Емоції й поведінка",
+    "Показ занять, ігри, вправи": "Ігри й вправи вдома", "Послуги: запис, як проходять заняття": "Послуги й запис",
+    "Особисте, команда, відгуки": "Особисте, команда, кейси", "Курси й заходи для колег": "Курси й заходи для фахівців",
+}
+SPHERES = ["Логопедія", "Нейропсихологія", "РАС і ABA", "Сенсорика й ерготерапія", "Дитяча психологія",
+           "Корекційний центр", "Освіта для фахівців", "Особистий блог фахівця", "Інше"]
+
+def rule_topic(cap):
+    s = strip_tags(cap).lower()
+    if not toks(cap): return "Без підпису"
+    for topic, rx in TOPIC_RULES:
+        if re.search(rx, s): return topic
+    return None
 
 TOK = re.compile(r"[a-zа-яіїєґ']{3,}")
 def toks(t):
@@ -111,9 +133,8 @@ class TopicNB:
     def __call__(self, cap):
         ws = toks(cap)
         if not ws: return "Без підпису"
-        s = strip_tags(cap).lower()
-        for topic, rx in TOPIC_RULES:
-            if re.search(rx, s): return topic
+        t = rule_topic(cap)
+        if t: return t
         if not self.prior: return "Інше"
         N, V = sum(self.prior.values()), len(self.vocab) + 1
         best = max(self.prior, key=lambda t: math.log(self.prior[t] / N) + sum(math.log((self.cnt[t][w] + 1) / (self.tot[t] + V)) for w in ws))
@@ -122,6 +143,8 @@ class TopicNB:
 
 # ---------- обкладинки ----------
 def fetch_thumb(url):
+    if url.startswith("data:image/"):
+        return url
     try:
         import urllib.request
         from PIL import Image
@@ -147,6 +170,21 @@ def build(new_csv, old_path, out_path):
     rows = {r["code"]: {c: r.get(c, "") or "" for c in COLS} for r in old["rows"]}
     groups = {}
     for r in rows.values(): groups.setdefault(r["account"], r["group"] or "Конкурент")
+    spheres = dict(old.get("spheres") or {})
+    acc_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "accounts.csv")
+    if not os.path.exists(acc_file): acc_file = "accounts.csv"
+    if os.path.exists(acc_file):
+        for a in csv.DictReader(open(acc_file, encoding="utf-8-sig")):
+            acc = (a.get("account") or "").strip().lstrip("@")
+            if not acc: continue
+            if a.get("sphere"): spheres[acc] = a["sphere"].strip()
+            if a.get("group"): groups[acc] = a["group"].strip()
+    # перейменування старих тем і переразмітка за правилами корекційної сфери
+    for r in rows.values():
+        if r["topic"] in OLD2NEW: r["topic"] = OLD2NEW[r["topic"]]
+        if r["detail"] == "так" and r["caption"]:
+            t = rule_topic(r["caption"])
+            if t: r["topic"] = t
     nb = TopicNB(rows.values())
 
     new = list(csv.DictReader(open(new_csv, encoding="utf-8-sig")))
@@ -155,7 +193,7 @@ def build(new_csv, old_path, out_path):
     thumb_col = next((c for c in THUMB_COLS if c in new[0]), None)
     per_author = Counter(r["Автор"] for r in new)
     for a, n in per_author.items():
-        if a not in groups and n >= NEW_ACCOUNT_MIN: groups[a] = "Конкурент"
+        if a not in groups and (n >= NEW_ACCOUNT_MIN or a in spheres): groups[a] = "Конкурент"
 
     added = updated = skipped = 0
     caps = {}
@@ -191,7 +229,7 @@ def build(new_csv, old_path, out_path):
             st = num(s.get("Сила хука (0–2)"))
             if st is not None: r["v_strength"] = "Сильний" if st >= 1 else "Середній" if st >= 0.6 else "Слабкий"
         caps[c] = cap
-        if thumb_col and not r["thumb"] and s.get(thumb_col) and views >= HIT:
+        if thumb_col and not r["thumb"] and s.get(thumb_col):
             r["thumb"] = fetch_thumb(s[thumb_col])
 
     # медіана акаунта і похідні
@@ -215,8 +253,11 @@ def build(new_csv, old_path, out_path):
             if r["like_rate"]: r["promoted"] = "так" if float(r["like_rate"]) < AD_RATE else "ні"
 
     out = sorted(rows.values(), key=lambda r: r["date"], reverse=True)
+    for a in groups: spheres.setdefault(a, "Інше")
+    for r in out:
+        r["group"] = groups.get(r["account"], r["group"]); r["sphere"] = spheres.get(r["account"], "Інше")
     data = {"updated": dt.date.today().isoformat(), "last_reel": today.isoformat(), "accounts": len(groups),
-            "groups": groups, "rows": out}
+            "groups": groups, "spheres": spheres, "rows": out}
     with open(out_path, "w", encoding="utf-8") as f:
         f.write("window.REELS_DATA=" + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";\n")
     hits = sum(1 for r in out if r["over_5k"] == "так")

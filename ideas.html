@@ -119,6 +119,7 @@ body { margin: 0; }
 
   <section id="hits-view" hidden>
     <div class="filters">
+      <label for="h-sph">Сфера<select id="h-sph"><option value="">Усі сфери</option></select></label>
       <label for="h-acc">Автор<select id="h-acc"><option value="">Усі автори</option></select></label>
       <label for="h-topic">Тема<select id="h-topic"><option value="">Будь-яка</option></select></label>
       <label for="h-q">Пошук у підписі<input type="search" id="h-q" placeholder="Напр.: звук Р"></label>
@@ -133,13 +134,16 @@ body { margin: 0; }
 
 <script>
 (() => {
-  const ZIN = "logocenter_zinchenko", HIT = 5000, OUT = 3, AD = 0.4, POLL_MS = 5000;
+  const ZIN = "logocenter_zinchenko", HIT = 5000, OUT = 3, OUR_X = 3, AD = 0.4, POLL_MS = 5000;
   const D = window.REELS_DATA || { rows: [] };
   const n = (v) => (v === "" || v == null ? null : Number(v));
   // Каталог: рилси конкурентів (не наші) з органічним охопленням: понад 5 000 або від 3× медіани свого акаунта
-  const HITS = D.rows.filter((r) => r.account !== ZIN && n(r.views) && (n(r.views) >= HIT || (n(r.x_median) >= OUT && n(r.views) >= 1000)))
+  // Наша медіана (рилси старші за 7 днів) — з нею порівнюємо охоплення конкурентів
+  const ourV = D.rows.filter((r) => r.account === ZIN && r.x_median !== "" && n(r.views)).map((r) => n(r.views)).sort((a, b) => a - b);
+  const OUR_MED = ourV.length ? (ourV.length % 2 ? ourV[ourV.length >> 1] : (ourV[ourV.length / 2 - 1] + ourV[ourV.length / 2]) / 2) : HIT / OUR_X;
+  const HITS = D.rows.filter((r) => r.account !== ZIN && n(r.views) && (n(r.views) >= OUR_X * OUR_MED || (n(r.x_median) >= OUT && n(r.views) >= OUR_MED)))
     .map((r) => ({ c: r.code, a: r.account, d: r.date, v: n(r.views), t: r.topic, k: r.cta,
-      p: r.promoted === "так" || (n(r.like_rate) != null && n(r.like_rate) < AD), x: n(r.x_median), cap: r.caption, u: r.url, th: r.thumb, h: r.v_hook, s: r.duration_s ? Math.round(n(r.duration_s)) : null }))
+      p: r.promoted === "так" || (n(r.like_rate) != null && n(r.like_rate) < AD), x: n(r.x_median), cap: r.caption, u: r.url, th: r.thumb, h: r.v_hook, sp: r.sphere || "Інше", s: r.duration_s ? Math.round(n(r.duration_s)) : null }))
     .sort((a, b) => b.v - a.v);
 
   const $ = (id) => document.getElementById(id);
@@ -152,6 +156,8 @@ body { margin: 0; }
   let ideas = [], ver = null, me = null, canWrite = false, loaded = false;
 
   $("upd").textContent = "Дані оновлено " + dmy(D.updated);
+  const ledeEl = document.querySelector(".lede");
+  if (ledeEl) ledeEl.textContent = "Органічні хіти конкурентів: рилси без ознак реклами з охопленням від " + nf.format(Math.round(OUR_X * OUR_MED)) + " переглядів (утричі більше за нашу медіану " + nf.format(Math.round(OUR_MED)) + ") або ті, що втричі перевищили звичайний рівень свого акаунта й не поступаються нашому. Відбирайте їх в ідеї і записуйте, як адаптувати для центру. Список спільний: зміни бачать усі, кому відкрито доступ.";
   const say = (msg, err) => { const s = $("status"); s.textContent = msg || ""; s.classList.toggle("err", !!err); };
   const errText = (e) => e && (e.code === "expired" || e.code === "not_allowed") ? "Доступ закінчився. Закрийте і знову відкрийте сторінку з бота." : "Не вдалося зберегти. Перевірте з’єднання і спробуйте ще раз.";
 
@@ -179,18 +185,19 @@ body { margin: 0; }
   $("n-hits").textContent = HITS.filter((h) => !h.p).length;
 
   // ---- каталог хітів
+  for (const a of [...new Set(HITS.map((h) => h.sp))].sort((a, b) => a.localeCompare(b, "uk"))) $("h-sph").append(new Option(a, a));
   for (const a of [...new Set(HITS.map((h) => h.a))].sort()) $("h-acc").append(new Option("@" + a, a));
   for (const t of [...new Set(HITS.map((h) => h.t).filter(Boolean))].sort((a, b) => a.localeCompare(b, "uk"))) $("h-topic").append(new Option(t, t));
   let limit = 30;
-  for (const id of ["h-acc", "h-topic", "h-org", "h-sort"]) $(id).addEventListener("change", () => { limit = 30; renderHits(); });
+  for (const id of ["h-sph", "h-acc", "h-topic", "h-org", "h-sort"]) $(id).addEventListener("change", () => { limit = 30; renderHits(); });
   let qT; $("h-q").addEventListener("input", () => { clearTimeout(qT); qT = setTimeout(() => { limit = 30; renderHits(); }, 200); });
   $("h-more").addEventListener("click", () => { limit += 30; renderHits(); });
   const thumbEl = (h) => { if (h && h.th && h.th.startsWith("data:image/")) { const i = el("img", "thumb"); i.src = h.th; i.alt = "Обкладинка рилса @" + h.a; i.loading = "lazy"; return i; } return el("div", "thumb"); };
   const openLink = (a) => a.addEventListener("click", (ev) => { if (TG.tg && TG.tg.openLink) { ev.preventDefault(); TG.tg.openLink(a.href); } });
   function renderHits() {
     if (views.hits.hidden) return;
-    const acc = $("h-acc").value, top = $("h-topic").value, ads = $("h-org").checked, q = $("h-q").value.trim().toLowerCase(), sort = $("h-sort").value;
-    const list = HITS.filter((h) => (!acc || h.a === acc) && (!top || h.t === top) && (ads || !h.p) && (!q || (h.cap || "").toLowerCase().includes(q)));
+    const sph = $("h-sph").value, acc = $("h-acc").value, top = $("h-topic").value, ads = $("h-org").checked, q = $("h-q").value.trim().toLowerCase(), sort = $("h-sort").value;
+    const list = HITS.filter((h) => (!sph || h.sp === sph) && (!acc || h.a === acc) && (!top || h.t === top) && (ads || !h.p) && (!q || (h.cap || "").toLowerCase().includes(q)));
     if (sort === "x") list.sort((a, b) => (b.x || 0) - (a.x || 0)); else if (sort === "d") list.sort((a, b) => b.d.localeCompare(a.d));
     $("h-count").textContent = list.length ? "Знайдено " + nf.format(list.length) : "Нічого не знайдено. Змініть фільтри.";
     const taken = new Set(ideas.map((i) => i.code).filter(Boolean));
@@ -198,7 +205,7 @@ body { margin: 0; }
       const card = el("article", "hit"), b = el("div", "body");
       b.style.display = "grid"; b.style.gap = "5px"; b.style.alignContent = "start"; b.style.minWidth = "0";
       b.append(el("div", "v", fk(h.v)), el("div", "meta", "@" + h.a + " · " + dmy(h.d) + (h.x ? " · " + (h.x >= 10 ? Math.round(h.x) : String(Math.round(h.x * 10) / 10).replace(".", ",")) + "× медіани" : "")));
-      const chips = el("div", "chips"); if (h.p) chips.append(el("span", "chip ad", "реклама?")); if (h.h) chips.append(el("span", "chip", "Хук: " + h.h)); if (h.t) chips.append(el("span", "chip", h.t)); if (h.s) chips.append(el("span", "chip", h.s + " с"));
+      const chips = el("div", "chips"); if (h.p) chips.append(el("span", "chip ad", "реклама?")); if (h.sp && h.sp !== "Інше") chips.append(el("span", "chip", h.sp)); if (h.h) chips.append(el("span", "chip", "Хук: " + h.h)); if (h.t) chips.append(el("span", "chip", h.t)); if (h.s) chips.append(el("span", "chip", h.s + " с"));
       b.append(chips, el("div", "cap", h.cap || "Без підпису"));
       const act = el("div", "act");
       const a = el("a", null, "Відкрити ↗"); a.href = h.u; a.target = "_blank"; a.rel = "noopener"; openLink(a);
