@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Банк ідей Reels</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="config.js"></script>
+<script src="data.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500;600&display=swap">
+<style>
+/* Layout: one working column — header, view switch, then a three-lane idea board or a filterable grid of competitor hits */
+:root {
+  --bg: #f4f6f8; --panel: #ffffff; --ink: #18202b; --muted: #5d6877; --line: #dde3ea;
+  --accent: #1f6f78; --accent-ink: #ffffff; --accent-soft: #e2f0f1;
+  --warn-soft: #fbefd9; --warn-ink: #7a4b00; --done-soft: #e5f2e7; --done-ink: #245c2e;
+  --display: "Unbounded", "Onest", system-ui, sans-serif; --body: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11161c; --panel: #19212a; --ink: #e8edf2; --muted: #9aa7b6; --line: #2a3542;
+  --accent: #5fb7bf; --accent-ink: #0d1a1c; --accent-soft: #1b3236;
+  --warn-soft: #3a2c12; --warn-ink: #f2c879; --done-soft: #1b3221; --done-ink: #9fd8a9; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11161c; --panel: #19212a; --ink: #e8edf2; --muted: #9aa7b6; --line: #2a3542;
+  --accent: #5fb7bf; --accent-ink: #0d1a1c; --accent-soft: #1b3236;
+  --warn-soft: #3a2c12; --warn-ink: #f2c879; --done-soft: #1b3221; --done-ink: #9fd8a9; color-scheme: dark; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1180px; margin-inline: auto; padding-block: 24px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(22px, 3.4vw, 30px); margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.lede { color: var(--muted); margin: 6px 0 0; max-width: 68ch; }
+.switch { display: flex; gap: 6px; flex-wrap: wrap; }
+.switch button { font: inherit; font-weight: 500; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.switch button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.switch .n { font-variant-numeric: tabular-nums; opacity: .7; margin-left: 4px; }
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.status-line { font-size: 13px; color: var(--muted); min-height: 1.2em; }
+.status-line.err { color: var(--warn-ink); }
+.board { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; align-items: start; }
+.lane { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: grid; gap: 10px; min-width: 0; }
+.lane h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin: 0; display: flex; justify-content: space-between; color: var(--muted); }
+.lane h2 .c { font-variant-numeric: tabular-nums; }
+.lane .empty { color: var(--muted); font-size: 13px; padding: 8px 2px; }
+.idea { border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: grid; grid-template-columns: 64px 1fr; gap: 10px; background: var(--bg); min-width: 0; }
+.idea.own { grid-template-columns: 1fr; }
+.thumb { width: 64px; height: 114px; object-fit: cover; border-radius: 6px; background: var(--line); display: block; }
+.idea .body { min-width: 0; display: grid; gap: 6px; align-content: start; }
+.idea .t { font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+.meta { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { font-size: 12px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); }
+.chip.ad { background: var(--warn-soft); color: var(--warn-ink); border-color: transparent; }
+.cap { font-size: 12.5px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+textarea { font: inherit; font-size: 13.5px; width: 100%; min-height: 58px; resize: vertical; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: var(--panel); color: var(--ink); box-sizing: border-box; }
+.row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+select, input[type=text], input[type=url], input[type=search] { font: inherit; font-size: 13.5px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: var(--panel); color: var(--ink); min-width: 0; }
+.btn { font: inherit; font-size: 13px; font-weight: 500; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.ghost { background: none; border-color: transparent; color: var(--muted); padding-inline: 6px; }
+.btn[disabled] { opacity: .55; cursor: default; }
+a { color: var(--accent); }
+.by { font-size: 12px; color: var(--muted); }
+.addform { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 10px; }
+.addform h2 { font-size: 15px; margin: 0; font-weight: 600; }
+.addform .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 8px; }
+.addform label { display: grid; gap: 3px; font-size: 12.5px; color: var(--muted); }
+.filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.filters label { display: grid; gap: 3px; font-size: 12.5px; color: var(--muted); }
+.filters .chk { display: flex; gap: 6px; align-items: center; font-size: 13.5px; color: var(--ink); padding-bottom: 6px; }
+.grid-hits { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 12px; }
+.hit { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px; display: grid; grid-template-columns: 76px 1fr; gap: 10px; min-width: 0; }
+.hit .thumb { width: 76px; height: 135px; }
+.hit .v { font-family: var(--display); font-weight: 500; font-size: 20px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.hit .act { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
+.added { font-size: 12.5px; color: var(--done-ink); background: var(--done-soft); padding: 3px 8px; border-radius: 999px; }
+.more { justify-self: start; }
+.notice { background: var(--warn-soft); color: var(--warn-ink); border-radius: var(--r); padding: 10px 14px; font-size: 14px; }
+@media (prefers-reduced-motion: no-preference) { .idea, .hit { transition: border-color .15s ease; } .idea:hover, .hit:hover { border-color: var(--muted); } }
+</style>
+
+<style>
+body { margin: 0; }
+.locked .wrap { visibility: hidden; }
+.toplink { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--muted); }
+</style>
+</head>
+<body>
+<script src="tg.js"></script>
+<div class="wrap">
+  <div class="toplink"><span id="upd"></span><a href="dashboard.html">Дашборд →</a></div>
+  <header>
+    <h1>Банк ідей Reels</h1>
+    <p class="lede">Органічні хіти конкурентів: рилси без ознак реклами, що набрали понад 5 000 переглядів або втричі більше за звичайний рівень свого акаунта. Відбирайте їх в ідеї і записуйте, як адаптувати для центру. Список спільний: зміни бачать усі, кому відкрито доступ.</p>
+  </header>
+
+  <div class="switch" role="group" aria-label="Розділ">
+    <button type="button" id="v-ideas" aria-pressed="true">Банк ідей<span class="n" id="n-ideas">0</span></button>
+    <button type="button" id="v-hits" aria-pressed="false">Хіти конкурентів<span class="n" id="n-hits"></span></button>
+  </div>
+  <div class="status-line" id="status" role="status"></div>
+
+  <section id="ideas-view">
+    <div class="board" id="board">
+      <div class="lane" data-lane="idea"><h2>Ідеї <span class="c">0</span></h2><div class="list"></div></div>
+      <div class="lane" data-lane="work"><h2>У роботі <span class="c">0</span></h2><div class="list"></div></div>
+      <div class="lane" data-lane="done"><h2>Знято <span class="c">0</span></h2><div class="list"></div></div>
+    </div>
+    <div class="addform" id="addform" style="margin-top:14px">
+      <h2>Своя ідея</h2>
+      <div class="grid">
+        <label for="a-title">Про що рилс<input type="text" id="a-title" maxlength="160" placeholder="Напр.: 5 ознак, що дитині час до логопеда"></label>
+        <label for="a-link">Посилання на приклад (необов’язково)<input type="url" id="a-link" maxlength="300" placeholder="https://www.instagram.com/reel/…"></label>
+      </div>
+      <label for="a-note" style="display:grid;gap:3px;font-size:12.5px;color:var(--muted)">Як знімаємо<textarea id="a-note" maxlength="2000" placeholder="Хук у першу секунду, хто в кадрі, заклик"></textarea></label>
+      <div class="row"><button type="button" class="btn primary" id="a-add">Додати в ідеї</button></div>
+    </div>
+  </section>
+
+  <section id="hits-view" hidden>
+    <div class="filters">
+      <label for="h-acc">Автор<select id="h-acc"><option value="">Усі автори</option></select></label>
+      <label for="h-topic">Тема<select id="h-topic"><option value="">Будь-яка</option></select></label>
+      <label for="h-q">Пошук у підписі<input type="search" id="h-q" placeholder="Напр.: звук Р"></label>
+      <label for="h-sort">Сортувати<select id="h-sort"><option value="v">За переглядами</option><option value="x">Наскільки вистрілив (× медіани)</option><option value="d">Найновіші</option></select></label>
+      <label class="chk" for="h-org"><input type="checkbox" id="h-org"> Показати й схожі на рекламу</label>
+    </div>
+    <div class="status-line" id="h-count"></div>
+    <div class="grid-hits" id="hits"></div>
+    <button type="button" class="btn more" id="h-more" hidden>Показати ще</button>
+  </section>
+</div>
+
+<script>
+(() => {
+  const ZIN = "logocenter_zinchenko", HIT = 5000, OUT = 3, AD = 0.4, POLL_MS = 5000;
+  const D = window.REELS_DATA || { rows: [] };
+  const n = (v) => (v === "" || v == null ? null : Number(v));
+  // Каталог: рилси конкурентів (не наші) з органічним охопленням: понад 5 000 або від 3× медіани свого акаунта
+  const HITS = D.rows.filter((r) => r.account !== ZIN && n(r.views) && (n(r.views) >= HIT || (n(r.x_median) >= OUT && n(r.views) >= 1000)))
+    .map((r) => ({ c: r.code, a: r.account, d: r.date, v: n(r.views), t: r.topic, k: r.cta,
+      p: r.promoted === "так" || (n(r.like_rate) != null && n(r.like_rate) < AD), x: n(r.x_median), cap: r.caption, u: r.url, th: r.thumb, h: r.v_hook, s: r.duration_s ? Math.round(n(r.duration_s)) : null }))
+    .sort((a, b) => b.v - a.v);
+
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const nf = new Intl.NumberFormat("uk-UA");
+  const fk = (v) => v >= 1e4 ? new Intl.NumberFormat("uk-UA", { notation: "compact", maximumFractionDigits: 1 }).format(v) : nf.format(v);
+  const dmy = (d) => d ? d.split("-").reverse().join(".") : "—";
+  const byCode = new Map(D.rows.map((r) => [r.code, { c: r.code, a: r.account, d: r.date, v: n(r.views), t: r.topic, p: r.promoted === "так", cap: r.caption, u: r.url, th: r.thumb }]));
+  const LANES = { idea: "Ідеї", work: "У роботі", done: "Знято" };
+  let ideas = [], ver = null, me = null, canWrite = false, loaded = false;
+
+  $("upd").textContent = "Дані оновлено " + dmy(D.updated);
+  const say = (msg, err) => { const s = $("status"); s.textContent = msg || ""; s.classList.toggle("err", !!err); };
+  const errText = (e) => e && (e.code === "expired" || e.code === "not_allowed") ? "Доступ закінчився. Закрийте і знову відкрийте сторінку з бота." : "Не вдалося зберегти. Перевірте з’єднання і спробуйте ще раз.";
+
+  // ---- сховище: Google Таблиця через Apps Script
+  const store = {
+    async load(force) {
+      const j = await TG.api("list", { ver: force ? null : ver });
+      if (j.same) return false;
+      ver = j.ver; ideas = j.ideas; loaded = true; return true;
+    },
+    async write(action, payload, local) {
+      local(); renderIdeas(); renderHits();
+      try { const j = await TG.api(action, payload); ver = j.ver; if (j.ideas) ideas = j.ideas; }
+      catch (e) { await store.load(true).catch(() => {}); throw e; }
+      finally { renderIdeas(); renderHits(); }
+    },
+  };
+  const patch = (id, fields) => store.write("patch", { id, fields }, () => { const i = ideas.find((x) => x.id === id); if (i) Object.assign(i, fields); });
+
+  // ---- перемикач
+  const views = { ideas: $("ideas-view"), hits: $("hits-view") };
+  const show = (v) => { for (const k in views) views[k].hidden = k !== v; $("v-ideas").setAttribute("aria-pressed", String(v === "ideas")); $("v-hits").setAttribute("aria-pressed", String(v === "hits")); if (v === "hits") renderHits(); };
+  $("v-ideas").addEventListener("click", () => show("ideas"));
+  $("v-hits").addEventListener("click", () => show("hits"));
+  $("n-hits").textContent = HITS.filter((h) => !h.p).length;
+
+  // ---- каталог хітів
+  for (const a of [...new Set(HITS.map((h) => h.a))].sort()) $("h-acc").append(new Option("@" + a, a));
+  for (const t of [...new Set(HITS.map((h) => h.t).filter(Boolean))].sort((a, b) => a.localeCompare(b, "uk"))) $("h-topic").append(new Option(t, t));
+  let limit = 30;
+  for (const id of ["h-acc", "h-topic", "h-org", "h-sort"]) $(id).addEventListener("change", () => { limit = 30; renderHits(); });
+  let qT; $("h-q").addEventListener("input", () => { clearTimeout(qT); qT = setTimeout(() => { limit = 30; renderHits(); }, 200); });
+  $("h-more").addEventListener("click", () => { limit += 30; renderHits(); });
+  const thumbEl = (h) => { if (h && h.th && h.th.startsWith("data:image/")) { const i = el("img", "thumb"); i.src = h.th; i.alt = "Обкладинка рилса @" + h.a; i.loading = "lazy"; return i; } return el("div", "thumb"); };
+  const openLink = (a) => a.addEventListener("click", (ev) => { if (TG.tg && TG.tg.openLink) { ev.preventDefault(); TG.tg.openLink(a.href); } });
+  function renderHits() {
+    if (views.hits.hidden) return;
+    const acc = $("h-acc").value, top = $("h-topic").value, ads = $("h-org").checked, q = $("h-q").value.trim().toLowerCase(), sort = $("h-sort").value;
+    const list = HITS.filter((h) => (!acc || h.a === acc) && (!top || h.t === top) && (ads || !h.p) && (!q || (h.cap || "").toLowerCase().includes(q)));
+    if (sort === "x") list.sort((a, b) => (b.x || 0) - (a.x || 0)); else if (sort === "d") list.sort((a, b) => b.d.localeCompare(a.d));
+    $("h-count").textContent = list.length ? "Знайдено " + nf.format(list.length) : "Нічого не знайдено. Змініть фільтри.";
+    const taken = new Set(ideas.map((i) => i.code).filter(Boolean));
+    $("hits").replaceChildren(...list.slice(0, limit).map((h) => {
+      const card = el("article", "hit"), b = el("div", "body");
+      b.style.display = "grid"; b.style.gap = "5px"; b.style.alignContent = "start"; b.style.minWidth = "0";
+      b.append(el("div", "v", fk(h.v)), el("div", "meta", "@" + h.a + " · " + dmy(h.d) + (h.x ? " · " + (h.x >= 10 ? Math.round(h.x) : String(Math.round(h.x * 10) / 10).replace(".", ",")) + "× медіани" : "")));
+      const chips = el("div", "chips"); if (h.p) chips.append(el("span", "chip ad", "реклама?")); if (h.h) chips.append(el("span", "chip", "Хук: " + h.h)); if (h.t) chips.append(el("span", "chip", h.t)); if (h.s) chips.append(el("span", "chip", h.s + " с"));
+      b.append(chips, el("div", "cap", h.cap || "Без підпису"));
+      const act = el("div", "act");
+      const a = el("a", null, "Відкрити ↗"); a.href = h.u; a.target = "_blank"; a.rel = "noopener"; openLink(a);
+      if (taken.has(h.c)) act.append(el("span", "added", "Уже в ідеях"));
+      else if (canWrite) { const btn = el("button", "btn primary", "В ідеї"); btn.type = "button"; btn.addEventListener("click", () => addFromHit(h, btn)); act.append(btn); }
+      act.append(a); b.append(act);
+      card.append(thumbEl(h), b); return card;
+    }));
+    $("h-more").hidden = list.length <= limit;
+  }
+
+  // ---- дошка ідей
+  function renderIdeas() {
+    $("n-ideas").textContent = ideas.length;
+    for (const lane of document.querySelectorAll(".lane")) {
+      const k = lane.dataset.lane, list = ideas.filter((i) => (i.status || "idea") === k).sort((a, b) => String(b.at).localeCompare(String(a.at)));
+      lane.querySelector(".c").textContent = list.length;
+      const box = lane.querySelector(".list");
+      const focused = box.contains(document.activeElement) ? document.activeElement : null;
+      if (focused && (focused.tagName === "TEXTAREA" || focused.tagName === "SELECT")) continue; // не стираємо нотатку, яку зараз пишуть
+      box.replaceChildren();
+      if (!list.length) box.append(el("div", "empty", k === "idea" ? (loaded ? "Поки порожньо. Відкрийте «Хіти конкурентів» і натисніть «В ідеї» або додайте свою ідею нижче." : "Завантажую спільний список…") : k === "work" ? "Перенесіть сюди ідею, яку вже готуєте." : "Тут будуть зняті рилси."));
+      for (const i of list) box.append(ideaCard(i));
+    }
+  }
+  function ideaCard(i) {
+    const h = i.code ? byCode.get(i.code) : null;
+    const card = el("article", "idea" + (h ? "" : " own")), b = el("div", "body");
+    b.append(el("div", "t", i.title || (h ? "@" + h.a + " · " + fk(h.v) + " переглядів" : "Ідея")));
+    if (h) {
+      b.append(el("div", "meta", "@" + h.a + " · " + dmy(h.d) + " · " + fk(h.v)));
+      const chips = el("div", "chips"); if (h.t) chips.append(el("span", "chip", h.t)); if (h.p) chips.append(el("span", "chip ad", "реклама?")); b.append(chips);
+      b.append(el("div", "cap", h.cap || "Без підпису"));
+    }
+    const ta = el("textarea"); ta.value = i.note || ""; ta.placeholder = "Як адаптуємо: хук, хто в кадрі, заклик"; ta.setAttribute("aria-label", "Нотатка до ідеї"); ta.disabled = !canWrite;
+    ta.addEventListener("blur", async () => { if (ta.value === (i.note || "")) return; try { await patch(i.id, { note: ta.value.slice(0, 2000) }); say("Нотатку збережено"); } catch (e) { say(errText(e), true); } });
+    b.append(ta);
+    const row = el("div", "row");
+    const sel = el("select"); sel.setAttribute("aria-label", "Статус"); for (const [k, v] of Object.entries(LANES)) sel.append(new Option(v, k)); sel.value = i.status || "idea"; sel.disabled = !canWrite;
+    sel.addEventListener("change", async () => { const v = sel.value; sel.blur(); try { await patch(i.id, { status: v }); say("Перенесено: " + LANES[v]); } catch (e) { say(errText(e), true); } });
+    row.append(sel);
+    const link = i.url || (h && h.u);
+    if (link && /^https?:\/\//.test(link)) { const a = el("a", null, "Приклад ↗"); a.href = link; a.target = "_blank"; a.rel = "noopener"; a.style.fontSize = "13px"; openLink(a); row.append(a); }
+    if (canWrite) {
+      const del = el("button", "btn ghost", "Видалити"); del.type = "button";
+      del.addEventListener("click", async () => {
+        if (del.dataset.armed !== "1") { del.dataset.armed = "1"; del.textContent = "Точно видалити?"; setTimeout(() => { del.dataset.armed = ""; del.textContent = "Видалити"; }, 4000); return; }
+        try { await store.write("delete", { id: i.id }, () => { ideas = ideas.filter((x) => x.id !== i.id); }); say("Ідею видалено"); } catch (e) { say(errText(e), true); }
+      });
+      row.append(del);
+    }
+    b.append(row);
+    if (i.byName) b.append(el("div", "by", "Додав(ла): " + i.byName));
+    if (h) card.append(thumbEl(h));
+    card.append(b); return card;
+  }
+  async function addFromHit(h, btn) {
+    btn.disabled = true; btn.textContent = "Додаю…";
+    const idea = { id: h.c, code: h.c, title: "", note: "", status: "idea", url: h.u, at: new Date().toISOString(), byName: me && me.name };
+    try { await store.write("add", { idea }, () => { ideas = ideas.filter((x) => x.id !== idea.id).concat(idea); }); say("Додано в ідеї: @" + h.a + ", " + fk(h.v) + " переглядів"); }
+    catch (e) { say(errText(e), true); }
+  }
+  $("a-add").addEventListener("click", async () => {
+    const title = $("a-title").value.trim(), url = $("a-link").value.trim(), note = $("a-note").value.trim();
+    if (!title) { say("Напишіть, про що рилс.", true); $("a-title").focus(); return; }
+    if (url && !/^https?:\/\//.test(url)) { say("Посилання має починатися з https://", true); return; }
+    $("a-add").disabled = true;
+    const idea = { id: "own-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), code: "", title: title.slice(0, 160), note: note.slice(0, 2000), status: "idea", url: url.slice(0, 300), at: new Date().toISOString(), byName: me && me.name };
+    try { await store.write("add", { idea }, () => { ideas = ideas.concat(idea); }); $("a-title").value = ""; $("a-link").value = ""; $("a-note").value = ""; say("Ідею додано"); }
+    catch (e) { say(errText(e), true); }
+    $("a-add").disabled = false;
+  });
+
+  if (location.hash === "#hits") show("hits");
+  renderIdeas();
+  TG.gate().then(async (user) => {
+    me = user; canWrite = true;
+    try { await store.load(true); } catch (e) { say("Не вдалося завантажити список. Перевірте з’єднання.", true); }
+    renderIdeas(); renderHits();
+    // автооновлення: раз на кілька секунд, поки сторінка відкрита
+    let busy = false;
+    setInterval(async () => {
+      if (busy || document.hidden) return;
+      busy = true;
+      try { if (await store.load()) { renderIdeas(); renderHits(); } }
+      catch (e) { if (e.code === "expired" || e.code === "not_allowed") say(errText(e), true); }
+      busy = false;
+    }, POLL_MS);
+  }).catch(() => {});
+})();
+</script>
+</body>
+</html>
