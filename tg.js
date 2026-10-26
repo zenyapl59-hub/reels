@@ -27,7 +27,7 @@
       body: JSON.stringify(Object.assign({ action, initData: tg ? tg.initData : "" }, payload || {})),
     });
     const j = await res.json();
-    if (!j.ok) { const e = new Error(j.error || "error"); e.code = j.error; e.id = j.id; throw e; }
+    if (!j.ok) { const e = new Error(j.message || j.error || "error"); e.code = j.error; e.id = j.id; throw e; }
     return j;
   }
 

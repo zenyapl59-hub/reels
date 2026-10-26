@@ -605,7 +605,9 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
     limit: ["Ліміт перевірок на сьогодні вичерпано", "Спробуйте завтра або попросіть власника збільшити DAILY_LIMIT у властивостях скрипта."],
     bad_model: ["Модель ШІ недоступна", "Власник має змінити GEMINI_MODEL у властивостях скрипта на доступну модель (див. aistudio.google.com)."],
     gemini_busy: ["ШІ зараз зайнятий", "Безкоштовний ліміт Gemini на хвилину вичерпано. Зачекайте хвилину і спробуйте ще раз."],
+    gemini: ["Gemini повернув помилку", ""],
     bad_answer: ["ШІ відповів незрозуміло", "Таке буває. Спробуйте ще раз."],
+    server: ["Помилка в скрипті Google", "Найчастіше це означає, що скрипт ще не має дозволу на запити до Gemini. Власник: в Apps Script виберіть функцію testGemini і натисніть «Выполнить», дайте дозвіл. Текст помилки: "],
     unknown_action: ["Скрипт ще старої версії", "Власник має оновити код Apps Script і розгорнути нову версію (див. інструкцію)."],
   };
   $("go").onclick = async () => {
@@ -628,7 +630,8 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
       renderResult(j.result, { dur: o.dur, day: o.day, topic: o.topic, title: o.title }, j.left);
     } catch (e) {
       $("progress").hidden = true;
-      const [t, d] = e.ui || ERR[e.code] || ["Перевірка не вдалася", (e.message && e.message !== "error" ? e.message + ". " : "") + "Перевірте інтернет і спробуйте ще раз."];
+      const known = ERR[e.code] && [ERR[e.code][0], ERR[e.code][1] + (e.code === "server" || e.code === "gemini" ? (e.message || "") : "")];
+      const [t, d] = e.ui || known || ["Перевірка не вдалася", (e.message && e.message !== "error" ? e.message + ". " : "") + "Перевірте інтернет і спробуйте ще раз."];
       $("result").replaceChildren(emptyBox(t, d, [["Спробувати ще раз", () => $("go").click()]]));
     }
     go.disabled = false;
