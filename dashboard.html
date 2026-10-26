@@ -90,6 +90,7 @@ h1 { font: 600 clamp(18px, 4.6vw, 24px)/1.2 var(--display); margin: 0; letter-sp
 @media (max-width: 639px) { .hdr .to-ideas { display: none; } }
 .bar { position: sticky; top: 0; z-index: 10; background: var(--bg); margin: 0 -4px; padding: 8px 4px; display: grid; gap: 8px; transition: box-shadow .2s; }
 .bar.stuck { box-shadow: 0 1px 0 var(--line); }
+.bar[hidden] { display: none; }
 .chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
 .chips::-webkit-scrollbar { display: none; }
 .chips[hidden] { display: none; }
@@ -240,6 +241,51 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
 .tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); }
 .sheet h2 { margin-top: 16px; }
 
+/* ---------- тренди ---------- */
+.trend { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); animation: enter .4s var(--ease) both; }
+.trend:last-child { border-bottom: 0; }
+.trend .l { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trend .m { grid-column: 1; font-size: 12px; color: var(--muted); }
+.delta { grid-row: 1 / span 2; grid-column: 2; font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; padding: 4px 10px; border-radius: 999px; }
+.delta.up { color: var(--accent); background: var(--accent-soft); }
+.delta.down { color: var(--us); background: var(--us-soft); }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 759px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.sub2 { font-size: 13px; font-weight: 600; margin: 4px 0 4px; display: flex; align-items: center; gap: 6px; }
+.sub2 .ico { width: 16px; height: 16px; }
+/* ---------- карта ніш ---------- */
+.heatwrap { overflow-x: auto; margin: 0 -16px; padding: 0 16px; scrollbar-width: thin; }
+.heat { border-collapse: separate; border-spacing: 3px; font-size: 12px; }
+.heat th { font-weight: 500; color: var(--muted); }
+.heat thead th { height: 132px; vertical-align: bottom; padding: 0 0 4px; }
+.heat thead th span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; display: inline-block; max-height: 128px; overflow: hidden; text-overflow: ellipsis; }
+.heat thead th.us span { color: var(--us); font-weight: 600; }
+.heat tbody th { position: sticky; left: 0; z-index: 1; background: var(--panel); text-align: left; padding-right: 8px; min-width: 128px; max-width: 150px; white-space: normal; line-height: 1.2; color: var(--ink); }
+.heat td { padding: 0; }
+.cell { position: relative; width: 38px; height: 34px; border: 0; border-radius: 6px; background: var(--soft); overflow: hidden; display: grid; place-items: center; font-size: 11px; font-weight: 600; color: var(--ink); animation: enter .4s var(--ease) both; transition: transform .15s var(--ease); }
+.cell i { position: absolute; inset: 0; background: var(--accent); }
+.cell.us i { background: var(--us); }
+.cell b { position: relative; }
+.cell.hot b { color: var(--accent-ink); }
+.cell.us.hot b { color: #fff; }
+@media (hover: hover) { .cell:hover { transform: scale(1.08); } }
+.heatleg { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); margin-top: 8px; align-items: center; }
+.heatleg .scale { display: inline-flex; gap: 2px; }
+.heatleg .scale i { width: 16px; height: 10px; border-radius: 2px; background: var(--accent); }
+/* ---------- профіль акаунта ---------- */
+.pos { font-size: 14px; line-height: 1.55; margin: 12px 0 0; padding: 12px; border-radius: 12px; background: var(--soft); }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.fact { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+.fact .k { font-size: 12px; }
+.fact b { display: block; font-size: 15px; margin-top: 2px; overflow-wrap: anywhere; }
+.fact small { display: block; font-size: 12px; color: var(--muted); }
+.fact small.up { color: var(--accent); } .fact small.down { color: var(--us); }
+.stack { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--soft); margin-top: 8px; }
+.stack i { height: 100%; width: 0; transition: width .75s var(--ease); }
+.stackleg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); margin-top: 6px; }
+.stackleg span { display: inline-flex; align-items: center; gap: 5px; }
+.acc .pos1 { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
+
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; } .ln { stroke-dashoffset: 0; } .pt { opacity: 1; } }
 </style>
 </head>
@@ -249,6 +295,7 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
   <nav class="nav" id="nav" aria-label="Розділи">
     <div class="brand"><span class="logo">R</span><b>Reels<br>аналітика</b></div>
     <button class="item" data-t="ov" data-ico="ov" aria-current="page"><span class="lbl">Огляд</span></button>
+    <button class="item" data-t="tr" data-ico="trend"><span class="lbl">Тренди</span></button>
     <button class="item" data-t="tp" data-ico="tp"><span class="lbl">Теми</span></button>
     <button class="item" data-t="ac" data-ico="ac"><span class="lbl">Акаунти</span></button>
     <button class="item" data-t="cm" data-ico="cm"><span class="lbl">Порівняння</span></button>
@@ -285,8 +332,20 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
       </div>
     </section>
 
+    <section data-p="tr" hidden>
+      <p class="pagenote" id="tr-note"></p>
+      <div class="card"><h2>Свіжі вильоти</h2><p class="note">Рилси конкурентів за останні 14 днів, що вже набрали щонайменше вдвічі більше за звичайний рівень свого акаунта. Тап — розбір і «В ідеї».</p><div class="strip" id="fresh"></div></div>
+      <div class="two">
+        <div class="card"><h2>Теми, що ростуть</h2><p class="note">Шанс органічного хіта тепер і раніше, у відсоткових пунктах.</p><div id="tr-up"></div></div>
+        <div class="card"><h2>Теми, що згасають</h2><p class="note">Тут шанс хіта впав. Не поспішайте знімати це масово.</p><div id="tr-down"></div></div>
+      </div>
+      <div class="card"><h2>Хто на підйомі</h2><p class="note">Медіана переглядів акаунта (без рилсів, схожих на рекламу) тепер проти попередніх 3 місяців і як змінилась частота публікацій. Тап — профіль акаунта.</p><div id="tr-acc"></div></div>
+      <div class="card"><h2>Формати</h2><p class="note">Шанс хіта за довжиною ролика тепер і раніше.</p><div id="tr-fmt"></div></div>
+    </section>
+
     <section data-p="tp" hidden>
       <div class="card"><h2>Сфери</h2><p class="note">Органічні хіти конкурентів за сферою. Тап — показати лише цю сферу.</p><div class="rows" id="spheres"></div></div>
+      <div class="card"><h2>Карта ніш</h2><p class="note">Хто про що знімає. Колір — яка частка рилсів акаунта на цю тему, число — скільки органічних хітів. Темні клітинки без чисел — тема, яку знімають, але без результату; світлі рядки — вільні ніші. Тап по клітинці — рилси.</p><div class="heatwrap"><table class="heat" id="heat"></table></div><div class="heatleg" id="heatleg"></div></div>
       <div class="card"><h2>Теми: шанс хіта</h2><p class="note">Яка частка рилсів конкурентів на тему стала органічним хітом. Тап по темі фільтрує весь дашборд.</p><div class="rows" id="topics"></div></div>
     </section>
 
@@ -337,6 +396,8 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
     pin: '<path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
     ext: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
     search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
+    trend: '<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+    down: '<path d="m3 7 6 6 4-4 8 8"/><path d="M15 17h6v-6"/>',
   };
   const ico = (k) => { const s = document.createElementNS(NS, "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("class", "ico"); s.setAttribute("aria-hidden", "true"); s.innerHTML = ICON[k]; return s; };
   const $ = (id) => document.getElementById(id);
@@ -365,7 +426,9 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
     $("takes").replaceChildren(...[0, 1, 2, 3].map((i) => { const li = el("li"); li.append(sk("32px", 32, "10px")); const t = el("div"); t.append(sk("95%", 12), sk(55 + i * 9 + "%", 12)); t.children[1].style.marginTop = "8px"; li.append(t); return li; }));
     $("strip").replaceChildren(...[0, 1, 2, 3, 4].map(() => { const t = el("div", "tile"); t.append(sk("132px", 208, "12px"), sk("80%", 10)); t.children[1].style.marginTop = "8px"; return t; }));
     $("all").replaceChildren(...[0, 1, 2, 3, 4, 5].map(() => { const r = el("div", "it"); const m = el("div"); m.append(sk("70%", 12), sk("45%", 10)); m.children[1].style.marginTop = "8px"; r.append(sk("44px", 68), m, sk("56px", 14)); return r; }));
-    for (const id of ["spheres", "topics", "wrows", "dur", "wday", "cmp", "ctopics"]) skLines($(id), 5);
+    for (const id of ["spheres", "topics", "wrows", "dur", "wday", "cmp", "ctopics", "tr-up", "tr-down", "tr-acc", "tr-fmt"]) skLines($(id), 5);
+    $("fresh").replaceChildren(...[0, 1, 2, 3].map(() => { const t = el("div", "tile"); t.append(sk("132px", 208, "12px"), sk("80%", 10)); t.children[1].style.marginTop = "8px"; return t; }));
+    $("heat").replaceChildren(...[0, 1, 2, 3, 4, 5].map(() => { const tr = el("tr"); tr.append(el("td")); tr.firstChild.append(sk("120px", 12)); for (let i = 0; i < 7; i++) { const td = el("td"); td.append(sk("38px", 34, "6px")); tr.append(td); } return tr; }));
     $("accs").replaceChildren(...[0, 1, 2, 3].map(() => { const c = el("div", "acc"); c.style.animation = "none"; const b = el("div"); b.append(sk("60%", 14), sk("80%", 10), sk("100%", 30)); b.children[1].style.marginTop = "8px"; b.children[2].style.marginTop = "12px"; c.append(sk("44px", 44, "50%"), b); return c; }));
     $("cline").replaceChildren(sk("100%", 180, "12px"));
     $("sorts").replaceChildren(...[0, 1, 2].map(() => sk("84px", 36, "999px")));
@@ -426,7 +489,7 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
 
     const S = { period: "365", sphere: "", topic: "", account: "", tab: "ov", sort: "v", q: "", limit: 25, wk: "v_hook", ca: ZIN, cb: "" };
     const PERIODS = [["30", "30 днів"], ["90", "90 днів"], ["365", "Рік"], ["all", "Увесь час"]];
-    const TITLES = { ov: "Огляд", tp: "Теми", ac: "Акаунти", cm: "Порівняння", wk: "Що працює" };
+    const TITLES = { ov: "Огляд", tr: "Тренди", tp: "Теми", ac: "Акаунти", cm: "Порівняння", wk: "Що працює" };
     const inP = (r, p = S.period, end = LAST) => p === "all" || (r.t <= end && end - r.t <= Number(p) * DAY);
     const slice = (o = {}) => R.filter((r) => inP(r) && (o.noSphere || !S.sphere || r.sp === S.sphere) && (o.noTopic || !S.topic || r.topic === S.topic) && (o.noAcc || !S.account || r.account === S.account));
     const comp = (rs) => rs.filter((r) => r.account !== ZIN);
@@ -572,7 +635,114 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
         return barRow(t.topic, fp(t.rate), 100 * t.rate / max, `${t.oh} хітів з ~${Math.round(t.est)} рилсів · у вас ${fp(uShare)} рилсів`, () => { S.topic = S.topic === t.topic ? "" : t.topic; draw(); }, S.topic === t.topic);
       }) : [emptyHere("Тем немає", "Теми визначаються за підписом. За цей період і сферу немає рилсів з підписом.")]));
       grow($("spheres")); grow($("topics"));
+      drawHeat();
     }
+
+
+    // ---------- Тренди ----------
+    // «Тепер» — останні 30 днів без найсвіжішого тижня (ті рилси ще набирають), «раніше» — 3 місяці до того.
+    const W_NOW = [LAST - 37 * DAY, LAST - 7 * DAY], W_PREV = [LAST - 127 * DAY, LAST - 37 * DAY];
+    const inW = (r, w) => r.t > w[0] && r.t <= w[1];
+    const ACC_MED = {}; for (const a of ACCS) ACC_MED[a] = med(R.filter((r) => r.account === a && r.x != null).map((r) => r.v));
+    const pp = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + f1(Math.abs(v)) + " п.п.";
+    const pct = (v) => (v > 0 ? "▲ +" : "▼ −") + Math.round(Math.abs(v)) + "%";
+    function trendRow(label, meta, delta, cls, onTap) {
+      const r = el(onTap ? "button" : "div", "trend"); if (onTap) { r.style.cssText = "width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);font:inherit;color:inherit"; r.onclick = onTap; }
+      r.append(el("span", "l", label), el("span", "delta " + cls, delta), el("span", "m", meta)); return r;
+    }
+    function drawTrends() {
+      const fmt = (d) => dmy(new Date(d).toISOString().slice(0, 10));
+      $("tr-note").textContent = `«Тепер» — рилси з ${fmt(W_NOW[0] + DAY)} по ${fmt(W_NOW[1])}, «раніше» — 3 місяці до того. Останній тиждень не враховано: ці рилси ще набирають перегляди.`;
+      const cs = comp(R), now = cs.filter((r) => inW(r, W_NOW)), prev = cs.filter((r) => inW(r, W_PREV));
+      // свіжі вильоти
+      const fresh = cs.filter((r) => r.t > LAST - 14 * DAY && ACC_MED[r.account]).map((r) => ({ r, k: r.v / ACC_MED[r.account] })).filter((o) => o.k >= 2 && !o.r.ad).sort((a, b) => b.k - a.k).slice(0, 15);
+      const ft = fresh.map(({ r, k }) => { const t = tileReel(r); const xx = t.querySelector(".xx"); if (xx) xx.textContent = fx(k); else { const s2 = el("span", "xx", fx(k)); t.querySelector(".cover").append(s2); } return t; }); stagger(ft);
+      $("fresh").classList.toggle("is-empty", !fresh.length);
+      $("fresh").replaceChildren(...(fresh.length ? ft : [emptyBox("Свіжих вильотів поки немає", "За останні 14 днів жоден рилс конкурентів не набрав удвічі більше за звичайне. Загляньте після наступного оновлення даних.")]));
+      // теми
+      const tn = topicStats(now), tp0 = topicStats(prev);
+      const rows = tn.map((t) => { const o = tp0.find((x) => x.topic === t.topic); return o && t.est >= 8 && o.est >= 8 ? { topic: t.topic, now: t.rate, prev: o.rate, d: t.rate - o.rate, n: Math.round(t.est) } : null; }).filter(Boolean);
+      const up = rows.filter((x) => x.d >= 2).sort((a, b) => b.d - a.d).slice(0, 6), dn = rows.filter((x) => x.d <= -2).sort((a, b) => a.d - b.d).slice(0, 6);
+      const tRow = (x, cls) => trendRow(x.topic, `шанс хіта ${fp(x.prev)} → ${fp(x.now)} · ~${x.n} рилсів тепер`, pp(x.d), cls, () => { S.topic = x.topic; setTab("ov"); });
+      $("tr-up").replaceChildren(...(up.length ? up.map((x) => tRow(x, "up")) : [emptyBox("Явного зростання немає", "Шанс хіта жодної теми не виріс помітно. Теми з менш ніж 8 рилсами в кожному періоді не враховано, щоб випадковості не здавались трендом.")]));
+      $("tr-down").replaceChildren(...(dn.length ? dn.map((x) => tRow(x, "down")) : [emptyBox("Нічого не згасає", "Жодна тема помітно не просіла.")]));
+      // акаунти
+      const ac = ACCS.map((a) => {
+        const n1 = R.filter((r) => r.account === a && !r.ad && inW(r, W_NOW)), n0 = R.filter((r) => r.account === a && !r.ad && inW(r, W_PREV));
+        const m1 = med(n1.map((r) => r.v)), m0 = med(n0.map((r) => r.v));
+        return n1.length >= 5 && n0.length >= 5 && m0 ? { a, m1, m0, d: 100 * (m1 / m0 - 1), f1: n1.length / (30 / 7), f0: n0.length / (90 / 7) } : null;
+      }).filter(Boolean).sort((x, y) => y.d - x.d);
+      $("tr-acc").replaceChildren(...(ac.length ? ac.map((x) => trendRow("@" + x.a + (x.a === ZIN ? " · ви" : ""), `медіана ${fk(x.m0)} → ${fk(x.m1)} · рилсів на тиждень ${f1(x.f0)} → ${f1(x.f1)}`, pct(x.d), x.d >= 0 ? "up" : "down", () => accSheet(x.a)))
+        : [emptyBox("Замало даних", "Потрібно хоча б 5 рилсів без ознак реклами в кожному періоді.")]));
+      // формати
+      const DB = [["до 15 с", (d) => d < 15], ["15–30 с", (d) => d >= 15 && d < 30], ["30–60 с", (d) => d >= 30 && d < 60], ["понад 60 с", (d) => d >= 60]];
+      const rate = (rs, f) => { const a = rs.filter((r) => r.dur != null && f(r.dur)); return a.length >= 5 ? [100 * cnt(a, (r) => r.oh) / a.length, a.length] : null; };
+      const fm = DB.map(([k, f]) => { const a = rate(now, f), b = rate(prev, f); return a && b ? trendRow(k, `шанс хіта ${fp(b[0])} → ${fp(a[0])} · ${a[1]} рилсів тепер`, pp(a[0] - b[0]), a[0] >= b[0] ? "up" : "down") : null; }).filter(Boolean);
+      $("tr-fmt").replaceChildren(...(fm.length ? fm : [emptyBox("Замало даних про тривалість", "Тривалість приходить із тетраді Colab.")]));
+    }
+
+    // ---------- Карта ніш ----------
+    function drawHeat() {
+      const rs = R.filter((r) => inP(r) && (!S.sphere || r.sp === S.sphere || r.account === ZIN));
+      const accs = ACCS.filter((a) => rs.some((r) => r.account === a));
+      const per = {}; for (const a of accs) { const t = topicStats(rs.filter((r) => r.account === a)), tot = t.reduce((q, x) => q + x.est, 0) || 1; per[a] = new Map(t.map((x) => [x.topic, { share: 100 * x.est / tot, oh: x.oh }])); }
+      const market = topicStats(comp(rs)).sort((a, b) => b.est - a.est).map((t) => t.topic);
+      if (!market.length || !accs.length) { $("heat").replaceChildren(); $("heatleg").replaceChildren(emptyHere("Немає даних для карти", "За цей період немає рилсів з темами.")); return; }
+      const maxShare = Math.max(1, ...accs.flatMap((a) => [...per[a].values()].map((v) => v.share)));
+      const thead = el("thead"), hr = el("tr"); hr.append(el("th"));
+      for (const a of accs) { const th = el("th", a === ZIN ? "us" : ""); th.append(el("span", null, (a === ZIN ? "★ " : "@") + a)); th.title = "@" + a; hr.append(th); }
+      thead.append(hr);
+      const tbody = el("tbody");
+      market.forEach((topic, ri) => {
+        const tr = el("tr"); tr.append(el("th", null, topic));
+        accs.forEach((a, ci) => {
+          const v = per[a].get(topic), td = el("td"), c = el("button", "cell" + (a === ZIN ? " us" : ""));
+          c.style.animationDelay = Math.min(ri * 30 + ci * 15, 600) + "ms";
+          if (v && v.share > 0) { const i = el("i"); i.style.opacity = (0.12 + 0.88 * v.share / maxShare).toFixed(2); c.append(i); if (v.share / maxShare > .5) c.classList.add("hot"); }
+          if (v && v.oh) c.append(el("b", null, v.oh));
+          c.title = `@${a} · ${topic}: ${v ? fp(v.share) + " рилсів" + (v.oh ? ", хітів " + v.oh : "") : "немає"}`;
+          c.setAttribute("aria-label", c.title);
+          c.onclick = () => { const list = rs.filter((r) => r.account === a && r.topic === topic); if (list.length) listSheet("@" + a + " · " + topic, list, list.length + " рилсів (з тих, що мають підпис), від найсильнішого відриву"); };
+          td.append(c); tr.append(td);
+        });
+        tbody.append(tr);
+      });
+      $("heat").replaceChildren(thead, tbody);
+      const lg = $("heatleg"); lg.replaceChildren();
+      const sc = el("span", "scale"); for (const o of [.15, .4, .7, 1]) { const i = el("i"); i.style.opacity = o; sc.append(i); }
+      const l1 = el("span"); l1.append(sc, document.createTextNode(" менше → більше рилсів на тему"));
+      lg.append(l1, el("span", null, "число — органічні хіти"), el("span", null, "★ — ви"));
+    }
+
+    // ---------- Профіль і позиціонування ----------
+    function top(arr, key, n = 1) { const m = new Map(); for (const r of arr) { const v = r[key]; if (v) m.set(v, (m.get(v) || 0) + 1); } const tot = [...m.values()].reduce((a, b) => a + b, 0); return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, c]) => ({ k, c, share: tot ? 100 * c / tot : 0, tot })); }
+    function profile(a, rs) {
+      const own = rs.filter((r) => r.account === a); if (!own.length) return null;
+      const det = own.filter((r) => r.topic), hitsA = own.filter((r) => r.hit && r.v_hook);
+      const ts = topicStats(own).sort((x, y) => y.est - x.est), tot = ts.reduce((q, x) => q + x.est, 0) || 1;
+      const themes = ts.slice(0, 3).map((t) => ({ k: t.topic, share: 100 * t.est / tot }));
+      const goals = top(hitsA, "v_goal", 4), frame = top(hitsA, "v_frame")[0], hook = top(hitsA, "v_hook")[0];
+      const ctaAll = top(det.filter((r) => r.cta && r.cta !== "Без заклику"), "cta")[0];
+      const noCta = det.length ? 100 * cnt(det, (r) => r.cta === "Без заклику") / det.length : null;
+      const comm = med(own.filter((r) => r.comments !== "" && r.comments != null && r.v).map((r) => 1000 * Number(r.comments) / r.v));
+      const WDN = ["понеділок", "вівторок", "середу", "четвер", "п’ятницю", "суботу", "неділю"];
+      const wd = [0, 1, 2, 3, 4, 5, 6].map((i) => { const x = own.filter((r) => r.wd === i); return x.length >= 4 ? [i, med(x.map((r) => r.v)), x.length] : null; }).filter(Boolean).sort((p, q) => q[1] - p[1])[0];
+      const mostDay = [0, 1, 2, 3, 4, 5, 6].map((i) => [i, cnt(own, (r) => r.wd === i)]).sort((p, q) => q[1] - p[1])[0];
+      const mk = comp(rs), mkMed = med(mk.filter((r) => r.x != null).map((r) => r.v)), mkShare = mk.length ? 100 * cnt(mk, (r) => r.oh) / mk.length : null;
+      const dur = med(own.map((r) => r.dur));
+      // текст позиціонування з даних
+      const parts = [];
+      parts.push(themes.length ? `Найбільше знімає про «${themes[0].k}» (${fp(themes[0].share)} рилсів)` + (themes[1] ? `, далі «${themes[1].k}»` + (themes[2] ? ` і «${themes[2].k}»` : "") : "") + "." : "Тем за підписами не визначено.");
+      if (goals[0]) parts.push(`Хіти здебільшого мають задачу «${goals[0].k.toLowerCase()}» (${fp(goals[0].share)}).`);
+      const fmtBits = [];
+      if (dur) fmtBits.push(`ролики ~${Math.round(dur)} с`);
+      if (frame) fmtBits.push(`у першому кадрі зазвичай «${frame.k.toLowerCase()}»`);
+      if (hook) fmtBits.push(`найчастіший хук — «${hook.k.toLowerCase()}»`);
+      if (fmtBits.length) parts.push("Формат: " + fmtBits.join(", ") + ".");
+      if (ctaAll) parts.push(`У підписах найчастіше просить: «${ctaAll.k.toLowerCase()}»` + (noCta != null ? `; без заклику ${fp(noCta)} рилсів.` : "."));
+      return { own, themes, goals, frame, hook, ctaAll, noCta, comm, wd, mostDay, WDN, mkMed, mkShare, dur, text: parts.join(" ") };
+    }
+    const GOAL_COL = { "Користь": "var(--accent)", "Прогрів": "color-mix(in srgb, var(--accent) 55%, var(--panel))", "Продаж": "var(--us)", "Охоплення": "var(--c3)" };
 
     // ---------- Акаунти ----------
     function accStats(a, rs) {
@@ -598,9 +768,11 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
       const list = ACCS.map((a) => accStats(a, rs)).filter(Boolean).sort((x, y) => x.a === ZIN ? -1 : y.a === ZIN ? 1 : y.oh - x.oh);
       const cards = list.map((s) => {
         const b = el("button", "acc" + (s.a === ZIN ? " us" : "")), body = el("div"); body.style.minWidth = "0";
-        body.append(el("div", "n", "@" + s.a + (s.a === ZIN ? " · ви" : "")), el("div", "k", s.sp + (s.best ? " · сильна тема: " + s.best : "")));
+        body.append(el("div", "n", "@" + s.a + (s.a === ZIN ? " · ви" : "")), el("div", "k", s.sp + (s.best ? " · хіти на темі «" + s.best + "»" : "")));
         const st = el("div", "stats");
         for (const [k, v] of [["медіана", fk(s.med)], ["хітів", nf.format(s.oh)], ["на тиждень", f1(s.perWeek)]]) { const d = el("div"); d.append(el("b", null, v), document.createTextNode(k)); st.append(d); }
+        const pr = profile(s.a, rs);
+        if (pr) { const bits = [pr.themes[0] && pr.themes[0].k, pr.goals[0] && pr.goals[0].k.toLowerCase(), pr.dur && "~" + Math.round(pr.dur) + " с"].filter(Boolean); if (bits.length) body.append(el("div", "pos1", bits.join(" · "))); }
         body.append(st, sparkSVG(monthly(s.a), s.a === ZIN ? "var(--us)" : "var(--accent)"));
         b.append(avatar(s.a), body); b.onclick = () => accSheet(s.a); return b;
       });
@@ -713,14 +885,14 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
       try { await TG.api("add", { idea: { id: r.code, code: r.code, title: "", note: "", status: "idea", url: r.url, at: new Date().toISOString() } }); btn.lastChild.textContent = "Додано в ідеї"; }
       catch (e) { btn.disabled = false; btn.lastChild.textContent = "Не вдалося, ще раз"; }
     }
-    function listSheet(title, rs) {
+    function listSheet(title, rs, noteText) {
       const l = el("div", "list");
       for (const r of rs.slice().sort((a, b) => (b.x || 0) - (a.x || 0)).slice(0, 30)) {
         const it = el("button", "it"), th = el("span", "th"); if (r.thumb) th.style.backgroundImage = `url("${r.thumb}")`;
         const mid = el("span"); mid.style.minWidth = "0"; const a = el("div", "a"); a.append(el("span", null, "@" + r.account)); mid.append(a, el("div", "b", r.topic || ""));
         const c = el("span", "c", fk(r.v)); c.append(el("small", null, fx(r.x))); it.append(th, mid, c); it.onclick = () => reelSheet(r); l.append(it);
       }
-      sheet([el("h2", null, title), el("p", "note", rs.length + " хітів, від найсильнішого відриву"), l]);
+      sheet([el("h2", null, title), el("p", "note", noteText || rs.length + " хітів, від найсильнішого відриву"), l]);
     }
     function accSheet(a) {
       const rs = R.filter((r) => inP(r)), s = accStats(a, rs);
@@ -731,6 +903,25 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
       const st = el("div", "stats"); st.style.marginTop = "16px";
       for (const [k, v] of [["рилсів", nf.format(s.n)], ["медіана", fk(s.med)], ["хітів", nf.format(s.oh)], ["на тиждень", f1(s.perWeek)], ["лайки", fp(s.lr)], ["тривалість", s.dur ? Math.round(s.dur) + " с" : "—"]]) { const d = el("div"); d.append(el("b", null, v), document.createTextNode(k)); st.append(d); }
       nodes.push(st, sparkSVG(monthly(a), a === ZIN ? "var(--us)" : "var(--accent)"));
+      const pr = profile(a, rs);
+      if (pr) {
+        nodes.push(el("h2", null, "Позиціонування"), el("p", "pos", pr.text));
+        const facts = el("div", "facts");
+        const fact = (k, v, sm, cls) => { const f = el("div", "fact"); f.append(el("div", "k", k), el("b", null, v)); if (sm) f.append(el("small", cls || "", sm)); facts.append(f); };
+        if (s.med != null && pr.mkMed) { const d = 100 * (s.med / pr.mkMed - 1); fact("Медіана проти ринку", fk(s.med), (d >= 0 ? "▲ +" : "▼ −") + Math.round(Math.abs(d)) + "% до медіани ринку " + fk(pr.mkMed), d >= 0 ? "up" : "down"); }
+        if (pr.mkShare != null) fact("Частка хітів", fp(s.share), "у ринку " + fp(pr.mkShare), s.share >= pr.mkShare ? "up" : "down");
+        fact("Частота", f1(s.perWeek) + " на тиждень", pr.mostDay && pr.mostDay[1] ? "найчастіше в " + pr.WDN[pr.mostDay[0]] : null);
+        if (pr.wd) fact("Найкращий день", ["Понеділок", "Вівторок", "Середа", "Четвер", "П’ятниця", "Субота", "Неділя"][pr.wd[0]], "медіана " + fk(pr.wd[1]) + " · " + pr.wd[2] + " рилсів");
+        fact("Лайки", fp(s.lr), "від переглядів");
+        if (pr.comm != null) fact("Коментарі", f1(pr.comm), "на 1 000 переглядів");
+        nodes.push(facts);
+        if (pr.goals.length) {
+          nodes.push(el("h2", null, "Задачі хітів"));
+          const st2 = el("div", "stack"), lg = el("div", "stackleg");
+          for (const g of pr.goals) { const i = el("i"); i.dataset.w = g.share + "%"; i.style.background = GOAL_COL[g.k] || "var(--c3)"; st2.append(i); const sp = el("span"), d = el("i", "dot"); d.style.background = GOAL_COL[g.k] || "var(--c3)"; sp.append(d, document.createTextNode(g.k + " " + fp(g.share))); lg.append(sp); }
+          nodes.push(st2, lg, el("p", "note", "За розбором відео " + pr.goals[0].tot + " хітів (Drex)."));
+        }
+      }
       const top = s.own.filter((r) => r.hit).sort((x, y) => y.v - x.v).slice(0, 12);
       nodes.push(el("h2", null, "Найкращі рилси"));
       if (top.length) { const sp = el("div", "strip"); sp.style.marginTop = "12px"; const tl = top.map(tileReel); stagger(tl); sp.append(...tl); nodes.push(sp); }
@@ -758,7 +949,7 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
     let lastW = innerWidth, rT;
     addEventListener("resize", () => { if (innerWidth === lastW) return; lastW = innerWidth; clearTimeout(rT); rT = setTimeout(() => { if (S.tab === "cm") drawCompare(); }, 200); });
 
-    function draw() { chipsUI(); ({ ov: drawOverview, tp: drawTopics, ac: drawAccounts, cm: drawCompare, wk: drawWorks })[S.tab](); }
+    function draw() { chipsUI(); $("bar").hidden = S.tab === "tr"; ({ ov: drawOverview, tr: drawTrends, tp: drawTopics, ac: drawAccounts, cm: drawCompare, wk: drawWorks })[S.tab](); }
     const start = location.hash.slice(1);
     if (TITLES[start]) setTab(start); else draw();
   }
