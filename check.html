@@ -331,7 +331,7 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
 .fixes b { display: block; font-size: 14px; }
 .fixes span { font-size: 13px; color: var(--muted); }
 .good { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
-.good li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; font-size: 14px; animation: enter .4s var(--ease) both; }
+.good li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; font-size: 14px; line-height: 1.45; animation: enter .4s var(--ease) both; }
 .good li .ico { width: 20px; height: 20px; color: var(--accent); }
 .aspects { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 12px; }
 .asp { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; animation: enter .4s var(--ease) both; min-width: 0; }
@@ -428,6 +428,7 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
     chev: '<path d="m15 6-6 6 6 6"/>',
     check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+    cross: '<path d="M7 7l10 10M17 7 7 17"/>',
     copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
     ext: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
   };
@@ -624,7 +625,7 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
       if (m.exHits.length) lines.push("\nНайсильніші органічні хіти конкурентів (реальні перші слова з розшифровки):\n- " + m.exHits.join("\n- "));
       if (m.exOurTop.length) lines.push("\nНаші найкращі рилси:\n- " + m.exOurTop.join("\n- "));
     }
-    lines.push(`\nОціни рилс чесно і конкретно, спираючись на те, що бачиш у кадрах і чуєш у звуці, та на дані ринку. Порівнюй із конкретними прикладами вище: чим цей рилс схожий на найсильніші хіти і на наші найкращі рилси, а чого йому бракує порівняно з ними. У коментарях і порадах посилайся на ці приклади (називай акаунт і що там спрацювало). Варіанти першої фрази пиши в стилі перших слів найсильніших хітів, але під тему цього рилса. Не вигадуй того, чого немає в кадрах. Звертай увагу на етику: без обіцянок «вилікуємо», без діагнозів по відео, обережно з обличчями дітей.
+    lines.push(`\nОціни рилс чесно і конкретно, спираючись на те, що бачиш у кадрах і чуєш у звуці, на СТРАТЕГІЮ І ПРАВИЛА ЦЕНТРУ (на самому початку) і на дані ринку. Правила центру важливіші за загальні поради. У «fixes» спершу те, що порушує стратегію. Заклик пропонуй зі стратегії (слово в коментар під сегмент). Порівнюй із конкретними прикладами вище: чим цей рилс схожий на найсильніші хіти і на наші найкращі рилси, а чого йому бракує порівняно з ними. У коментарях і порадах посилайся на ці приклади (називай акаунт і що там спрацювало). Варіанти першої фрази пиши в стилі перших слів найсильніших хітів, але під тему цього рилса. Не вигадуй того, чого немає в кадрах. Звертай увагу на етику: без обіцянок «вилікуємо», без діагнозів по відео, обережно з обличчями дітей.
 Поверни ЛИШЕ JSON українською за схемою:
 {"score": ціле 0–100 (шанс стати хітом відносно ринку),
  "verdict": "одне речення-висновок",
@@ -637,6 +638,9 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
  "pacing": {"comment": "темп, монтаж, де глядач може піти"},
  "cta": {"type": одне з: ${CTAS.join(" | ")}, "comment": "..."},
  "goal": "Користь|Прогрів|Продаж|Охоплення",
+ "segment": "Некерована дитина|Мама мовчуна|Майбутній школяр|Довіра|Жоден сегмент",
+ "loop": {"present": true/false, "comment": "чи відкрито петлю на 2–5 с і чи закрито в розв’язці; де потрібні ре-хуки"},
+ "strategy_check": [{"rule": "коротка назва правила зі стратегії центру", "ok": true/false, "comment": "що саме в цьому рилсі"}] — 6–8 найважливіших правил стратегії (формула хука, текст до 6 слів, без привітання, петля, ре-хуки, субтитри, заклик-слово, сегмент),
  "duration_comment": "чи вдала тривалість",
  "strengths": ["2–4 сильні сторони"],
  "fixes": [{"what": "що виправити", "how": "конкретно як"}] — 3–5 пунктів, від найважливішого,
@@ -710,12 +714,21 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
     requestAnimationFrame(() => requestAnimationFrame(() => { ring.querySelector(".fg").style.strokeDashoffset = 1 - score / 100; }));
     const t0 = performance.now(); const step = (t) => { const k = Math.max(0, Math.min(1, (t - t0) / 1100)); num.textContent = Math.round(score * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); else { num.textContent = score; num.append(el("small", null, "зі 100")); } }; requestAnimationFrame(step);
     const vt = el("div"); vt.append(el("div", "k", "Шанс стати хітом"), el("div", "verdict", r.verdict || ""));
-    const tags = el("div", "tags"); for (const x of [r.topic, r.goal && "Задача: " + r.goal]) if (x) tags.append(el("span", "tag", x)); vt.append(tags);
+    const tags = el("div", "tags"); for (const x of [r.segment && r.segment !== "Жоден сегмент" && "Сегмент: " + r.segment, r.topic, r.goal && "Задача: " + r.goal]) if (x) tags.append(el("span", "tag", x));
+    if (r.segment === "Жоден сегмент") tags.append(el("span", "ad", "не працює на жоден сегмент")); vt.append(tags);
     sb.append(ring, vt); c1.append(sb);
     if (left != null) c1.append(el("p", "note", "Залишилось перевірок сьогодні: " + left));
     box.append(c1);
     // ризики
     if (r.risks && r.risks.length) for (const x of r.risks) box.append(el("div", "risk", "⚠ " + x));
+    // чек-лист стратегії центру
+    if (r.strategy_check && r.strategy_check.length) {
+      const c = el("div", "card"), okN = r.strategy_check.filter((x) => x.ok).length;
+      c.append(el("h2", null, "Стратегія центру: " + okN + " з " + r.strategy_check.length), el("p", "note", "Правила з аркуша «brief» у вашій таблиці."));
+      const ul = el("ul", "good");
+      r.strategy_check.forEach((x, i) => { const li = el("li"); li.style.animationDelay = i * 50 + "ms"; const ic = ico(x.ok ? "check" : "cross"); if (!x.ok) ic.style.color = "var(--us)"; const d = el("span"); d.append(el("b", null, x.rule || ""), document.createTextNode(x.comment ? " — " + x.comment : "")); li.append(ic, d); ul.append(li); });
+      c.append(ul); box.append(c);
+    }
     // що виправити
     if (r.fixes && r.fixes.length) { const c = el("div", "card"); c.append(el("h2", null, "Що виправити")); const ol = el("ol", "fixes"); r.fixes.forEach((f, i) => { const li = el("li"); li.style.animationDelay = i * 60 + "ms"; const d = el("div"); d.append(el("b", null, f.what || ""), el("span", null, f.how || "")); li.append(d); ol.append(li); }); c.append(ol); box.append(c); }
     // сильні сторони
@@ -730,6 +743,7 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
     if (r.subtitles) add("Субтитри", r.subtitles.present ? "Є" : "Немає", r.subtitles.present ? "ok" : "", [["", r.subtitles.comment], ["", M2 && M2.subs != null ? `У хітах ринку субтитри в ${M2.subs}%.` : ""]], 3);
     if (r.speech) add("Мова", r.speech.starts, r.speech.starts === "З першої секунди" ? "ok" : "", [["q", r.speech.transcript_start && "«" + r.speech.transcript_start + "»"], ["", r.speech.comment]], 4);
     if (r.pacing) add("Темп і монтаж", null, "", [["", r.pacing.comment]], 5);
+    if (r.loop) add("Петля", r.loop.present ? "Є" : "Немає", r.loop.present ? "ok" : "warn", [["", r.loop.comment]], 5);
     if (r.cta) add("Заклик", r.cta.type, r.cta.type && r.cta.type !== "Без заклику" ? "ok" : "warn", [["", r.cta.comment]], 6);
     const dB = M2 && ctx.dur ? M2.durs.find((d) => ctx.dur >= d.lo && ctx.dur < d.hi) : null, bestD = M2 && [...M2.durs].sort((a, b) => b.rate - a.rate)[0];
     add("Тривалість", ctx.dur ? Math.round(ctx.dur) + " с" : null, "", [["", r.duration_comment], ["", dB ? `У ринку ролики ${dB.k} стають хітами в ${fp(dB.rate)} випадків` + (bestD && bestD !== dB ? `, найкраще — ${bestD.k} (${fp(bestD.rate)}).` : " — це найкращий діапазон.") : ""]], 7);
