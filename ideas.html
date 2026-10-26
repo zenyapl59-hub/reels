@@ -3,298 +3,609 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Банк ідей Reels</title>
+<title>Reels: банк ідей</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="config.js"></script>
-<script src="data.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500;600&display=swap">
 <style>
-/* Layout: one working column — header, view switch, then a three-lane idea board or a filterable grid of competitor hits */
+/* ---------- палітра: два акценти (ринок і ми) + нейтральні ---------- */
 :root {
-  --bg: #f4f6f8; --panel: #ffffff; --ink: #18202b; --muted: #5d6877; --line: #dde3ea;
+  --bg: #f4f6f8; --panel: #ffffff; --ink: #18202b; --muted: #5d6877; --line: #e1e6ec; --soft: #eef2f5; --sk: #e3e8ee; --sk-hi: #f3f6f8;
   --accent: #1f6f78; --accent-ink: #ffffff; --accent-soft: #e2f0f1;
-  --warn-soft: #fbefd9; --warn-ink: #7a4b00; --done-soft: #e5f2e7; --done-ink: #245c2e;
+  --us: #c2621a; --us-soft: #fbeadc; --c3: #7d8a99;
+  --warn-soft: #fbefd9; --warn-ink: #7a4b00; --good: #2e7d4f; --bad: #b3261e;
+  --shadow: 0 8px 28px rgba(16, 24, 40, .14);
   --display: "Unbounded", "Onest", system-ui, sans-serif; --body: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --r: 10px;
+  --r: 16px; --navw: 232px; --ease: cubic-bezier(.2, .8, .2, 1);
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #11161c; --panel: #19212a; --ink: #e8edf2; --muted: #9aa7b6; --line: #2a3542;
-  --accent: #5fb7bf; --accent-ink: #0d1a1c; --accent-soft: #1b3236;
-  --warn-soft: #3a2c12; --warn-ink: #f2c879; --done-soft: #1b3221; --done-ink: #9fd8a9; color-scheme: dark; } }
 :root[data-theme="dark"] {
-  --bg: #11161c; --panel: #19212a; --ink: #e8edf2; --muted: #9aa7b6; --line: #2a3542;
+  --bg: #11161c; --panel: #19212a; --ink: #e8edf2; --muted: #9aa7b6; --line: #2a3542; --soft: #222c37; --sk: #222c37; --sk-hi: #2e3a48;
   --accent: #5fb7bf; --accent-ink: #0d1a1c; --accent-soft: #1b3236;
-  --warn-soft: #3a2c12; --warn-ink: #f2c879; --done-soft: #1b3221; --done-ink: #9fd8a9; color-scheme: dark; }
-body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; }
-.wrap { max-width: 1180px; margin-inline: auto; padding-block: 24px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
-h1 { font-family: var(--display); font-weight: 600; font-size: clamp(22px, 3.4vw, 30px); margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
-.lede { color: var(--muted); margin: 6px 0 0; max-width: 68ch; }
-.switch { display: flex; gap: 6px; flex-wrap: wrap; }
-.switch button { font: inherit; font-weight: 500; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
-.switch button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.switch .n { font-variant-numeric: tabular-nums; opacity: .7; margin-left: 4px; }
-button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.status-line { font-size: 13px; color: var(--muted); min-height: 1.2em; }
-.status-line.err { color: var(--warn-ink); }
-.board { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; align-items: start; }
-.lane { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: grid; gap: 10px; min-width: 0; }
-.lane h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin: 0; display: flex; justify-content: space-between; color: var(--muted); }
-.lane h2 .c { font-variant-numeric: tabular-nums; }
-.lane .empty { color: var(--muted); font-size: 13px; padding: 8px 2px; }
-.idea { border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: grid; grid-template-columns: 64px 1fr; gap: 10px; background: var(--bg); min-width: 0; }
-.idea.own { grid-template-columns: 1fr; }
-.thumb { width: 64px; height: 114px; object-fit: cover; border-radius: 6px; background: var(--line); display: block; }
-.idea .body { min-width: 0; display: grid; gap: 6px; align-content: start; }
-.idea .t { font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
-.meta { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
-.chips { display: flex; flex-wrap: wrap; gap: 4px; }
-.chip { font-size: 12px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); }
-.chip.ad { background: var(--warn-soft); color: var(--warn-ink); border-color: transparent; }
-.cap { font-size: 12.5px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-textarea { font: inherit; font-size: 13.5px; width: 100%; min-height: 58px; resize: vertical; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: var(--panel); color: var(--ink); box-sizing: border-box; }
-.row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-select, input[type=text], input[type=url], input[type=search] { font: inherit; font-size: 13.5px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: var(--panel); color: var(--ink); min-width: 0; }
-.btn { font: inherit; font-size: 13px; font-weight: 500; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
-.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-.btn.ghost { background: none; border-color: transparent; color: var(--muted); padding-inline: 6px; }
-.btn[disabled] { opacity: .55; cursor: default; }
+  --us: #f0a060; --us-soft: #3a2a1c; --c3: #8d9aaa;
+  --warn-soft: #3a2c12; --warn-ink: #f2c879; --good: #6cc28f; --bad: #f08a80;
+  --shadow: 0 8px 28px rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); -webkit-tap-highlight-color: transparent; }
+body.lock-scroll { overflow: hidden; }
+.locked .shell { visibility: hidden; }
 a { color: var(--accent); }
-.by { font-size: 12px; color: var(--muted); }
-.addform { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 10px; }
-.addform h2 { font-size: 15px; margin: 0; font-weight: 600; }
-.addform .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 8px; }
-.addform label { display: grid; gap: 3px; font-size: 12.5px; color: var(--muted); }
-.filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
-.filters label { display: grid; gap: 3px; font-size: 12.5px; color: var(--muted); }
-.filters .chk { display: flex; gap: 6px; align-items: center; font-size: 13.5px; color: var(--ink); padding-bottom: 6px; }
-.grid-hits { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 12px; }
-.hit { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px; display: grid; grid-template-columns: 76px 1fr; gap: 10px; min-width: 0; }
-.hit .thumb { width: 76px; height: 135px; }
-.hit .v { font-family: var(--display); font-weight: 500; font-size: 20px; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.hit .act { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
-.added { font-size: 12.5px; color: var(--done-ink); background: var(--done-soft); padding: 3px 8px; border-radius: 999px; }
-.more { justify-self: start; }
-.notice { background: var(--warn-soft); color: var(--warn-ink); border-radius: var(--r); padding: 10px 14px; font-size: 14px; }
-@media (prefers-reduced-motion: no-preference) { .idea, .hit { transition: border-color .15s ease; } .idea:hover, .hit:hover { border-color: var(--muted); } }
-</style>
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
+/* ---------- каркас і бокове меню ---------- */
+.shell { display: grid; grid-template-columns: var(--navw) minmax(0, 1fr); min-height: 100vh; transition: grid-template-columns .3s var(--ease); }
+body.mini { --navw: 76px; }
+.nav { position: sticky; top: 0; height: 100vh; overflow: hidden; background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; padding: 16px 12px; }
+.brand { display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 8px; margin-bottom: 12px; white-space: nowrap; }
+.logo { width: 36px; height: 36px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; flex: none; font: 600 14px var(--display); }
+.brand b { font: 600 14px/1.2 var(--display); }
+.item { display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: none; color: var(--muted); font-weight: 500; text-decoration: none; white-space: nowrap; width: 100%; text-align: left; transition: background .2s, color .2s; }
+.item:hover { background: var(--soft); color: var(--ink); }
+.item[aria-current="page"] { background: var(--accent-soft); color: var(--ink); }
+.item[aria-current="page"] .ico { color: var(--accent); }
+.lbl, .brand b { transition: opacity .2s; }
+.nav .sep { height: 1px; background: var(--line); margin: 8px 6px; }
+.nav .spacer { flex: 1; }
+.collapse .ico { transition: transform .3s var(--ease); }
+body.mini .brand b { opacity: 0; pointer-events: none; }
+/* згорнуте меню: іконка + короткий підпис під нею */
+body.mini .item { flex-direction: column; justify-content: center; gap: 2px; height: 56px; padding: 0 2px; text-align: center; }
+body.mini .item .lbl { font-size: 10px; line-height: 1.1; white-space: normal; }
+body.mini .collapse .ico { transform: rotate(180deg); }
+.scrim { display: none; }
+.menu-btn { display: none; width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); place-items: center; flex: none; }
+@media (max-width: 1023px) and (min-width: 640px) {
+  body { --navw: 76px; }
+  .brand b { opacity: 0; pointer-events: none; }
+  .item { flex-direction: column; justify-content: center; gap: 2px; height: 56px; padding: 0 2px; text-align: center; }
+  .item .lbl { font-size: 10px; line-height: 1.1; white-space: normal; }
+  .collapse { display: none; }
+}
+@media (max-width: 639px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .nav { position: fixed; z-index: 40; left: 0; top: 0; bottom: 0; height: auto; width: 280px; transform: translateX(-102%); transition: transform .3s var(--ease); box-shadow: var(--shadow); padding-top: max(16px, env(safe-area-inset-top)); }
+  body.drawer .nav { transform: none; }
+  .scrim { display: block; position: fixed; inset: 0; z-index: 39; background: rgba(0, 0, 0, .4); opacity: 0; pointer-events: none; transition: opacity .3s; }
+  body.drawer .scrim { opacity: 1; pointer-events: auto; }
+  .collapse { display: none; }
+  .menu-btn { display: grid; }
+  body.mini .brand b { opacity: 1; pointer-events: auto; }
+  body.mini .item { flex-direction: row; justify-content: flex-start; gap: 12px; height: 44px; padding: 0 14px; text-align: left; }
+  body.mini .item .lbl { font-size: 15px; white-space: nowrap; }
+}
+
+/* ---------- основна колонка ---------- */
+.app { width: 100%; max-width: 1040px; margin: 0 auto; padding: 16px 24px 64px; display: grid; gap: 16px; align-content: start; min-width: 0; }
+@media (max-width: 639px) { .app { padding: 12px max(16px, env(safe-area-inset-right)) 48px max(16px, env(safe-area-inset-left)); gap: 12px; } }
+.hdr { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.hdr .tt { min-width: 0; flex: 1; }
+h1 { font: 600 clamp(18px, 4.6vw, 24px)/1.2 var(--display); margin: 0; letter-spacing: -.01em; }
+.upd { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.hdr .to-ideas { flex: none; font-size: 13px; white-space: nowrap; }
+@media (max-width: 639px) { .hdr .to-ideas { display: none; } }
+.bar { position: sticky; top: 0; z-index: 10; background: var(--bg); margin: 0 -4px; padding: 8px 4px; display: grid; gap: 8px; transition: box-shadow .2s; }
+.bar.stuck { box-shadow: 0 1px 0 var(--line); }
+.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chips[hidden] { display: none; }
+.chip { flex: none; min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); font-size: 13px; font-weight: 500; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; transition: background .2s, color .2s, border-color .2s; }
+.chip:hover { border-color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip.f { background: var(--accent-soft); border-color: transparent; }
+.chip.f .ico { width: 14px; height: 14px; }
+section[data-p] { display: grid; gap: 12px; min-width: 0; animation: enter .35s var(--ease) both; }
+section[data-p][hidden] { display: none; }
+@keyframes enter { from { opacity: 0; transform: translateY(8px); } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; min-width: 0; }
+h2 { font-size: 17px; font-weight: 600; margin: 0; line-height: 1.3; }
+.note { color: var(--muted); font-size: 13px; margin: 4px 0 12px; }
+.pagenote { color: var(--muted); font-size: 13px; margin: 0; }
+
+/* ---------- головні цифри ---------- */
+.hero { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 639px) { .hero { gap: 8px; } .hero .card { padding: 12px; } }
+@media (max-width: 359px) { .hero { grid-template-columns: 1fr; } }
+.k { color: var(--muted); font-size: 12px; line-height: 1.3; }
+.big { font: 600 clamp(20px, 6vw, 28px)/1.15 var(--display); margin-top: 8px; font-variant-numeric: tabular-nums; }
+.big.sm { font: 600 15px/1.3 var(--body); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.sub { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.35; }
+.sub.up { color: var(--good); } .sub.down { color: var(--bad); }
+.takes { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+.takes li { display: grid; grid-template-columns: 32px 1fr; gap: 12px; align-items: start; font-size: 14px; animation: enter .4s var(--ease) both; }
+.takes .ic { width: 32px; height: 32px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+.takes .ic .ico { width: 18px; height: 18px; }
+
+/* ---------- стрічка рилсів ---------- */
+.strip { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+.strip.end { -webkit-mask-image: none; mask-image: none; }
+.strip.is-empty { display: block; -webkit-mask-image: none; mask-image: none; }
+.strip::-webkit-scrollbar { display: none; }
+.tile { flex: none; width: 132px; scroll-snap-align: start; border: 0; padding: 0; background: none; text-align: left; animation: enter .45s var(--ease) both; }
+.cover { width: 132px; height: 208px; border-radius: 12px; background: var(--soft) center/cover; position: relative; overflow: hidden; display: block; transition: transform .25s var(--ease), box-shadow .25s; }
+@media (hover: hover) { .tile:hover .cover { transform: translateY(-3px); box-shadow: var(--shadow); } }
+.cover .v { position: absolute; left: 6px; bottom: 6px; background: rgba(0, 0, 0, .64); color: #fff; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.cover .xx { position: absolute; right: 6px; top: 6px; background: var(--accent); color: var(--accent-ink); font-size: 12px; font-weight: 600; padding: 2px 6px; border-radius: 999px; }
+.tile .who { font-size: 12px; color: var(--muted); margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile .tp { font-size: 13px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* ---------- смуги ---------- */
+.rows { display: grid; gap: 4px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; padding: 10px 8px; margin: 0 -8px; border: 0; border-radius: 12px; background: none; text-align: left; width: calc(100% + 16px); transition: background .2s; }
+button.row:hover, .row.on { background: var(--soft); }
+.row .l { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .r { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.track { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--soft); overflow: hidden; position: relative; transition: height .2s var(--ease); }
+.row.on .track, button.row:hover .track { background: var(--panel); }
+@media (hover: hover) { button.row:hover .track { height: 10px; } button.row:hover .fill { filter: brightness(1.08); } }
+.fill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 4px; background: var(--accent); transition: width .75s var(--ease), filter .2s; }
+.row .mini { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+
+/* ---------- список рилсів ---------- */
+.search { position: relative; margin: 12px 0 8px; }
+.search .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); width: 18px; height: 18px; }
+input[type=search] { font: inherit; font-size: 15px; width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px 8px 38px; background: var(--panel); color: var(--ink); }
+.list .it { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 4px; border: 0; border-bottom: 1px solid var(--line); background: none; width: 100%; text-align: left; transition: background .2s; }
+.list .it:last-child { border-bottom: 0; }
+@media (hover: hover) { .list .it:hover { background: var(--soft); } }
+.th { width: 44px; height: 68px; border-radius: 8px; background: var(--soft) center/cover; }
+.list .a { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.list .a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list .b { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list .c { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; font-size: 14px; }
+.list .c small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+.ad { flex: none; font-size: 11px; font-weight: 500; padding: 1px 6px; border-radius: 999px; background: var(--warn-soft); color: var(--warn-ink); }
+.more { margin-top: 8px; width: 100%; min-height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); font-weight: 500; }
+
+/* ---------- акаунти ---------- */
+.accs { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.acc { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: var(--r); padding: 16px; animation: enter .4s var(--ease) both; transition: border-color .2s, box-shadow .2s, transform .2s var(--ease); }
+@media (hover: hover) { .acc:hover { box-shadow: var(--shadow); transform: translateY(-2px); } }
+.acc.us { border-color: var(--us); }
+.av { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-weight: 600; font-size: 17px; background: var(--accent-soft); color: var(--accent); }
+.av.us { background: var(--us-soft); color: var(--us); }
+.acc .n { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.stats div { font-size: 12px; color: var(--muted); }
+.stats b { display: block; font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.spark { display: block; width: 100%; height: 32px; margin-top: 8px; overflow: visible; }
+
+/* ---------- порівняння ---------- */
+.pick { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 479px) { .pick { grid-template-columns: 1fr; } }
+.pick label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.pick label span { display: flex; align-items: center; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
+select { font: inherit; font-size: 15px; width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; background: var(--panel); color: var(--ink); }
+.cmp { display: grid; gap: 16px; margin-top: 12px; }
+.cmp .lab { font-size: 13px; color: var(--muted); }
+.dbar { display: grid; grid-template-columns: minmax(0, 1fr) 72px; gap: 8px; align-items: center; margin-top: 6px; }
+.dbar .track { height: 10px; grid-column: auto; }
+.dbar .val { font-size: 13px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--muted); flex-wrap: wrap; margin-top: 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ---------- графік ---------- */
+.chart { position: relative; margin-top: 8px; touch-action: pan-y; }
+.chart svg { display: block; width: 100%; overflow: visible; }
+.chart .ax { font-size: 11px; fill: var(--muted); font-family: var(--body); }
+.chart .gl { stroke: var(--line); stroke-dasharray: 3 4; }
+.ln { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.1s var(--ease) forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.pt { opacity: 0; animation: fade .3s ease .9s forwards; transform-box: fill-box; transform-origin: center; transition: transform .2s var(--ease); }
+.pt.on { transform: scale(1.8); }
+@keyframes fade { to { opacity: 1; } }
+.guide { stroke: var(--muted); stroke-width: 1; opacity: 0; transition: opacity .15s; }
+.guide.on { opacity: .5; }
+.tip { position: absolute; top: 0; z-index: 3; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 8px 10px; font-size: 12px; min-width: 120px; opacity: 0; transform: translateY(4px); transition: opacity .15s, transform .15s; }
+.tip.on { opacity: 1; transform: none; }
+.tip b { display: block; margin-bottom: 4px; font-size: 12px; }
+.tip div { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+.tip div span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+
+/* ---------- заготовки й порожні стани ---------- */
+.sk { background: linear-gradient(90deg, var(--sk) 25%, var(--sk-hi) 37%, var(--sk) 63%); background-size: 400% 100%; animation: sk 1.4s ease infinite; border-radius: 8px; }
+@keyframes sk { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+.skl { height: 12px; margin-top: 8px; }
+.empty { display: grid; gap: 6px; justify-items: start; padding: 16px; border: 1px dashed var(--line); border-radius: 12px; background: var(--soft); margin-top: 4px; animation: enter .3s var(--ease) both; }
+.empty b { font-size: 14px; }
+.empty p { margin: 0; font-size: 13px; color: var(--muted); }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.btn { min-height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); font-weight: 500; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; transition: background .2s, border-color .2s; }
+.btn:hover { border-color: var(--muted); }
+.btn.sm { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.btn.p { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn[disabled] { opacity: .6; cursor: default; }
+.btn .ico { width: 18px; height: 18px; }
+
+/* ---------- нижній аркуш ---------- */
+.shade { position: fixed; inset: 0; background: rgba(0, 0, 0, .45); z-index: 50; opacity: 0; pointer-events: none; transition: opacity .25s; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 51; max-height: 88vh; overflow-y: auto; overscroll-behavior: contain; background: var(--panel); border-radius: 20px 20px 0 0; padding: 12px 16px calc(24px + env(safe-area-inset-bottom)); transform: translateY(105%); visibility: hidden; transition: transform .3s var(--ease), visibility 0s .3s; max-width: 720px; margin: 0 auto; }
+body.sheet-open .shade { opacity: 1; pointer-events: auto; }
+body.sheet-open .sheet { transform: none; visibility: visible; transition: transform .3s var(--ease); }
+.grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 12px; }
+.x { position: absolute; right: 12px; top: 10px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--soft); display: grid; place-items: center; }
+.x .ico { width: 18px; height: 18px; }
+.sheet .hd { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 16px; padding-right: 32px; }
+.sheet .cov { width: 112px; height: 196px; border-radius: 12px; background: var(--soft) center/cover; }
+.sheet .big { font-size: 22px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 14px; margin: 16px 0 0; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; }
+.cap { font-size: 14px; color: var(--muted); margin: 12px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); }
+.sheet h2 { margin-top: 16px; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; } .ln { stroke-dashoffset: 0; } .pt { opacity: 1; } }
+</style>
 <style>
-body { margin: 0; }
-.locked .wrap { visibility: hidden; }
-.toplink { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--muted); }
+/* ---------- банк ідей ---------- */
+.lanechips { display: none; }
+.board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+@media (max-width: 899px) { .lanechips { display: flex; } .board { grid-template-columns: minmax(0, 1fr); } .lane:not(.cur) { display: none; } }
+.lane { background: var(--soft); border-radius: var(--r); padding: 12px; display: grid; gap: 10px; min-width: 0; align-content: start; }
+.lane > h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); display: flex; justify-content: space-between; align-items: center; padding: 2px 4px; }
+.lane > h2 .c { background: var(--panel); color: var(--ink); font-size: 12px; border-radius: 999px; padding: 1px 8px; letter-spacing: 0; }
+.lane .list2 { display: grid; gap: 10px; }
+.idea { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; animation: enter .4s var(--ease) both; transition: box-shadow .2s, transform .2s var(--ease); }
+.idea.own { grid-template-columns: minmax(0, 1fr); }
+@media (hover: hover) { .idea:hover { box-shadow: var(--shadow); } }
+.idea .th { width: 56px; height: 92px; border-radius: 8px; border: 0; padding: 0; }
+.idea .t { font-weight: 600; font-size: 14px; overflow-wrap: anywhere; line-height: 1.35; }
+.idea .meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.idea textarea { font: inherit; font-size: 14px; width: 100%; min-height: 64px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--bg); color: var(--ink); margin-top: 8px; transition: border-color .2s, background .2s; }
+.idea textarea:focus { outline: none; border-color: var(--accent); background: var(--panel); }
+.idea .acts { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.idea .by { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.btn.ghost { border-color: transparent; background: none; color: var(--muted); }
+.btn.ghost.danger { color: var(--bad); }
+.grid-hits { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px 12px; }
+@media (max-width: 399px) { .grid-hits { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.hit { display: grid; gap: 6px; min-width: 0; animation: enter .45s var(--ease) both; }
+.hit .tile { width: 100%; animation: none; }
+.hit .cover { width: 100%; height: auto; aspect-ratio: 9 / 15; }
+.hit .act { display: flex; gap: 6px; align-items: center; }
+.hit .act .btn { flex: 1; justify-content: center; }
+.added { flex: 1; text-align: center; font-size: 13px; font-weight: 500; color: var(--accent); background: var(--accent-soft); border-radius: 12px; min-height: 36px; display: grid; place-items: center; }
+.selects { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 639px) { .selects { grid-template-columns: minmax(0, 1fr); } }
+.selects label, .form label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.form { display: grid; gap: 12px; margin-top: 12px; }
+.form input[type=text], .form input[type=url], .form textarea { font: inherit; font-size: 15px; width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--panel); color: var(--ink); }
+.form textarea { min-height: 96px; resize: vertical; }
+.toast { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 60; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 14px; box-shadow: var(--shadow); transition: opacity .25s, transform .25s var(--ease); max-width: calc(100% - 32px); }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+.toast.err { background: var(--bad); color: #fff; }
+.fab { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 20; display: none; }
+@media (max-width: 639px) { .fab { display: inline-flex; box-shadow: var(--shadow); border-radius: 999px; } }
+.rule { font-size: 13px; color: var(--muted); margin: 0; }
+.btn.sm.ghost { width: 36px; padding: 0; justify-content: center; }
+@media (max-width: 639px) { .toast { bottom: calc(80px + env(safe-area-inset-bottom)); } .app { padding-bottom: 96px; } }
 </style>
 </head>
 <body>
 <script src="tg.js"></script>
-<div class="wrap">
-  <div class="toplink"><span id="upd"></span><a href="dashboard.html">Дашборд →</a></div>
-  <header>
-    <h1>Банк ідей Reels</h1>
-    <p class="lede">Органічні хіти конкурентів: рилси без ознак реклами, що набрали понад 5 000 переглядів або втричі більше за звичайний рівень свого акаунта. Відбирайте їх в ідеї і записуйте, як адаптувати для центру. Список спільний: зміни бачать усі, кому відкрито доступ.</p>
-  </header>
+<div class="shell">
+  <nav class="nav" id="nav" aria-label="Розділи">
+    <div class="brand"><span class="logo">R</span><b>Reels<br>банк ідей</b></div>
+    <button class="item" data-t="board" data-ico="board" aria-current="page"><span class="lbl">Дошка</span></button>
+    <button class="item" data-t="hits" data-ico="wk"><span class="lbl">Хіти</span></button>
+    <button class="item" data-act="add" data-ico="plus"><span class="lbl">Своя ідея</span></button>
+    <div class="sep"></div>
+    <a class="item" href="dashboard.html" data-ico="ov"><span class="lbl">Дашборд</span></a>
+    <div class="spacer"></div>
+    <button class="item collapse" id="collapse" data-ico="chev" aria-label="Згорнути меню"><span class="lbl">Згорнути</span></button>
+  </nav>
+  <div class="scrim" id="scrim"></div>
 
-  <div class="switch" role="group" aria-label="Розділ">
-    <button type="button" id="v-ideas" aria-pressed="true">Банк ідей<span class="n" id="n-ideas">0</span></button>
-    <button type="button" id="v-hits" aria-pressed="false">Хіти конкурентів<span class="n" id="n-hits"></span></button>
-  </div>
-  <div class="status-line" id="status" role="status"></div>
+  <main class="app">
+    <header class="hdr">
+      <button class="menu-btn" id="menu" aria-label="Меню" data-ico="menu"></button>
+      <div class="tt"><h1 id="title">Дошка ідей</h1><div class="upd" id="upd">Завантажую…</div></div>
+      <a class="to-ideas" href="dashboard.html">Дашборд →</a>
+    </header>
 
-  <section id="ideas-view">
-    <div class="board" id="board">
-      <div class="lane" data-lane="idea"><h2>Ідеї <span class="c">0</span></h2><div class="list"></div></div>
-      <div class="lane" data-lane="work"><h2>У роботі <span class="c">0</span></h2><div class="list"></div></div>
-      <div class="lane" data-lane="done"><h2>Знято <span class="c">0</span></h2><div class="list"></div></div>
-    </div>
-    <div class="addform" id="addform" style="margin-top:14px">
-      <h2>Своя ідея</h2>
-      <div class="grid">
-        <label for="a-title">Про що рилс<input type="text" id="a-title" maxlength="160" placeholder="Напр.: 5 ознак, що дитині час до логопеда"></label>
-        <label for="a-link">Посилання на приклад (необов’язково)<input type="url" id="a-link" maxlength="300" placeholder="https://www.instagram.com/reel/…"></label>
+    <section data-p="board">
+      <div class="chips lanechips" id="lanechips"></div>
+      <div class="board" id="board">
+        <div class="lane cur" data-lane="idea"><h2>Ідеї <span class="c">0</span></h2><div class="list2"></div></div>
+        <div class="lane" data-lane="work"><h2>У роботі <span class="c">0</span></h2><div class="list2"></div></div>
+        <div class="lane" data-lane="done"><h2>Знято <span class="c">0</span></h2><div class="list2"></div></div>
       </div>
-      <label for="a-note" style="display:grid;gap:3px;font-size:12.5px;color:var(--muted)">Як знімаємо<textarea id="a-note" maxlength="2000" placeholder="Хук у першу секунду, хто в кадрі, заклик"></textarea></label>
-      <div class="row"><button type="button" class="btn primary" id="a-add">Додати в ідеї</button></div>
-    </div>
-  </section>
+    </section>
 
-  <section id="hits-view" hidden>
-    <div class="filters">
-      <label for="h-sph">Сфера<select id="h-sph"><option value="">Усі сфери</option></select></label>
-      <label for="h-acc">Автор<select id="h-acc"><option value="">Усі автори</option></select></label>
-      <label for="h-topic">Тема<select id="h-topic"><option value="">Будь-яка</option></select></label>
-      <label for="h-q">Пошук у підписі<input type="search" id="h-q" placeholder="Напр.: звук Р"></label>
-      <label for="h-sort">Сортувати<select id="h-sort"><option value="v">За переглядами</option><option value="x">Наскільки вистрілив (× медіани)</option><option value="d">Найновіші</option></select></label>
-      <label class="chk" for="h-org"><input type="checkbox" id="h-org"> Показати й схожі на рекламу</label>
-    </div>
-    <div class="status-line" id="h-count"></div>
-    <div class="grid-hits" id="hits"></div>
-    <button type="button" class="btn more" id="h-more" hidden>Показати ще</button>
-  </section>
+    <section data-p="hits" hidden>
+      <p class="rule" id="rule"></p>
+      <div class="bar" id="bar">
+        <div class="search" id="searchbox" style="margin:0"><input type="search" id="h-q" placeholder="Слово з підпису, напр.: звук Р" aria-label="Пошук у підписах"></div>
+        <div class="chips" id="h-sorts"></div>
+      </div>
+      <div class="selects">
+        <label>Сфера<select id="h-sph"><option value="">Усі сфери</option></select></label>
+        <label>Автор<select id="h-acc"><option value="">Усі автори</option></select></label>
+        <label>Тема<select id="h-topic"><option value="">Будь-яка</option></select></label>
+      </div>
+      <div class="note" id="h-count" style="margin:0"></div>
+      <div class="grid-hits" id="hits"></div>
+      <button class="more" id="h-more" hidden>Показати ще</button>
+    </section>
+  </main>
 </div>
+
+<button class="btn p fab" id="fab" data-ico="plus">Своя ідея</button>
+<div class="toast" id="toast" role="status"></div>
+<div class="shade" id="shade"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Подробиці"><div class="grab"></div><button class="x" id="sheet-x" aria-label="Закрити" data-ico="close"></button><div id="sheetbody"></div></div>
 
 <script>
 (() => {
-  const ZIN = "logocenter_zinchenko", HIT = 5000, OUT = 3, OUR_X = 3, AD = 0.4, POLL_MS = 5000;
-  const D = window.REELS_DATA || { rows: [] };
-  const n = (v) => (v === "" || v == null ? null : Number(v));
-  // Каталог: рилси конкурентів (не наші) з органічним охопленням: понад 5 000 або від 3× медіани свого акаунта
-  // Наша медіана (рилси старші за 7 днів) — з нею порівнюємо охоплення конкурентів
-  const ourV = D.rows.filter((r) => r.account === ZIN && r.x_median !== "" && n(r.views)).map((r) => n(r.views)).sort((a, b) => a - b);
-  const OUR_MED = ourV.length ? (ourV.length % 2 ? ourV[ourV.length >> 1] : (ourV[ourV.length / 2 - 1] + ourV[ourV.length / 2]) / 2) : HIT / OUR_X;
-  const HITS = D.rows.filter((r) => r.account !== ZIN && n(r.views) && (n(r.views) >= OUR_X * OUR_MED || (n(r.x_median) >= OUT && n(r.views) >= OUR_MED)))
-    .map((r) => ({ c: r.code, a: r.account, d: r.date, v: n(r.views), t: r.topic, k: r.cta,
-      p: r.promoted === "так" || (n(r.like_rate) != null && n(r.like_rate) < AD), x: n(r.x_median), cap: r.caption, u: r.url, th: r.thumb, h: r.v_hook, sp: r.sphere || "Інше", s: r.duration_s ? Math.round(n(r.duration_s)) : null }))
-    .sort((a, b) => b.v - a.v);
-
+  const NS = "http://www.w3.org/2000/svg";
+  const ICON = {
+    board: '<rect x="3.5" y="4" width="5" height="16" rx="1.5"/><rect x="9.5" y="4" width="5" height="11" rx="1.5"/><rect x="15.5" y="4" width="5" height="7" rx="1.5"/>',
+    wk: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    ov: '<path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z"/>',
+    idea: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2v.2h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    close: '<path d="M6 6l12 12M18 6 6 18"/>',
+    chev: '<path d="m15 6-6 6 6 6"/>',
+    next: '<path d="m9 6 6 6-6 6"/>',
+    prev: '<path d="m15 6-6 6 6 6"/>',
+    check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+    trash: '<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/>',
+    ext: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+    search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
+  };
+  const ico = (k) => { const s = document.createElementNS(NS, "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("class", "ico"); s.setAttribute("aria-hidden", "true"); s.innerHTML = ICON[k]; return s; };
   const $ = (id) => document.getElementById(id);
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-  const nf = new Intl.NumberFormat("uk-UA");
-  const fk = (v) => v >= 1e4 ? new Intl.NumberFormat("uk-UA", { notation: "compact", maximumFractionDigits: 1 }).format(v) : nf.format(v);
-  const dmy = (d) => d ? d.split("-").reverse().join(".") : "—";
-  const byCode = new Map(D.rows.map((r) => [r.code, { c: r.code, a: r.account, d: r.date, v: n(r.views), t: r.topic, p: r.promoted === "так", cap: r.caption, u: r.url, th: r.thumb }]));
-  const LANES = { idea: "Ідеї", work: "У роботі", done: "Знято" };
-  let ideas = [], ver = null, me = null, canWrite = false, loaded = false;
+  const tg = window.TG && TG.tg;
 
-  $("upd").textContent = "Дані оновлено " + dmy(D.updated);
-  const ledeEl = document.querySelector(".lede");
-  if (ledeEl) ledeEl.textContent = "Органічні хіти конкурентів: рилси без ознак реклами з охопленням від " + nf.format(Math.round(OUR_X * OUR_MED)) + " переглядів (утричі більше за нашу медіану " + nf.format(Math.round(OUR_MED)) + ") або ті, що втричі перевищили звичайний рівень свого акаунта й не поступаються нашому. Відбирайте їх в ідеї і записуйте, як адаптувати для центру. Список спільний: зміни бачать усі, кому відкрито доступ.";
-  const say = (msg, err) => { const s = $("status"); s.textContent = msg || ""; s.classList.toggle("err", !!err); };
-  const errText = (e) => e && (e.code === "expired" || e.code === "not_allowed") ? "Доступ закінчився. Закрийте і знову відкрийте сторінку з бота." : "Не вдалося зберегти. Перевірте з’єднання і спробуйте ще раз.";
+  // ---------- меню ----------
+  document.querySelectorAll("[data-ico]").forEach((n) => n.prepend(ico(n.dataset.ico)));
+  $("searchbox").prepend(ico("search"));
+  try { if (localStorage.getItem("navMini") === "1") document.body.classList.add("mini"); } catch (e) {}
+  $("collapse").onclick = () => { const m = document.body.classList.toggle("mini"); try { localStorage.setItem("navMini", m ? "1" : "0"); } catch (e) {} };
+  const back = () => { if (!tg || !tg.BackButton) return; (document.body.classList.contains("drawer") || document.body.classList.contains("sheet-open")) ? tg.BackButton.show() : tg.BackButton.hide(); };
+  const drawer = (on) => { document.body.classList.toggle("drawer", on); back(); };
+  $("menu").onclick = () => drawer(true);
+  $("scrim").onclick = () => drawer(false);
+  document.querySelectorAll(".item").forEach((b) => b.setAttribute("title", b.textContent.trim()));
+  const bar = $("bar");
+  addEventListener("scroll", () => bar.classList.toggle("stuck", bar.getBoundingClientRect().top <= 0 && scrollY > 40), { passive: true });
 
-  // ---- сховище: Google Таблиця через Apps Script
-  const store = {
-    async load(force) {
-      const j = await TG.api("list", { ver: force ? null : ver });
-      if (j.same) return false;
-      ver = j.ver; ideas = j.ideas; loaded = true; return true;
-    },
-    async write(action, payload, local) {
-      local(); renderIdeas(); renderHits();
-      try { const j = await TG.api(action, payload); ver = j.ver; if (j.ideas) ideas = j.ideas; }
-      catch (e) { await store.load(true).catch(() => {}); throw e; }
-      finally { renderIdeas(); renderHits(); }
-    },
-  };
-  const patch = (id, fields) => store.write("patch", { id, fields }, () => { const i = ideas.find((x) => x.id === id); if (i) Object.assign(i, fields); });
+  let toastT;
+  const toast = (msg, err) => { const t = $("toast"); t.textContent = msg; t.classList.toggle("err", !!err); t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), err ? 4500 : 2200); };
 
-  // ---- перемикач
-  const views = { ideas: $("ideas-view"), hits: $("hits-view") };
-  const show = (v) => { for (const k in views) views[k].hidden = k !== v; $("v-ideas").setAttribute("aria-pressed", String(v === "ideas")); $("v-hits").setAttribute("aria-pressed", String(v === "hits")); if (v === "hits") renderHits(); };
-  $("v-ideas").addEventListener("click", () => show("ideas"));
-  $("v-hits").addEventListener("click", () => show("hits"));
-  $("n-hits").textContent = HITS.filter((h) => !h.p).length;
+  function sheet(nodes) { $("sheetbody").replaceChildren(...nodes); document.body.classList.add("sheet-open", "lock-scroll"); $("sheet").scrollTop = 0; back(); }
+  function closeSheet() { document.body.classList.remove("sheet-open", "lock-scroll"); back(); }
+  $("shade").onclick = closeSheet; $("sheet-x").onclick = closeSheet;
+  addEventListener("keydown", (e) => { if (e.key === "Escape") { if (document.body.classList.contains("sheet-open")) closeSheet(); else drawer(false); } });
+  if (tg && tg.BackButton) tg.BackButton.onClick(() => { if (document.body.classList.contains("sheet-open")) closeSheet(); else drawer(false); });
 
-  // ---- каталог хітів
-  for (const a of [...new Set(HITS.map((h) => h.sp))].sort((a, b) => a.localeCompare(b, "uk"))) $("h-sph").append(new Option(a, a));
-  for (const a of [...new Set(HITS.map((h) => h.a))].sort()) $("h-acc").append(new Option("@" + a, a));
-  for (const t of [...new Set(HITS.map((h) => h.t).filter(Boolean))].sort((a, b) => a.localeCompare(b, "uk"))) $("h-topic").append(new Option(t, t));
-  let limit = 30;
-  for (const id of ["h-sph", "h-acc", "h-topic", "h-org", "h-sort"]) $(id).addEventListener("change", () => { limit = 30; renderHits(); });
-  let qT; $("h-q").addEventListener("input", () => { clearTimeout(qT); qT = setTimeout(() => { limit = 30; renderHits(); }, 200); });
-  $("h-more").addEventListener("click", () => { limit += 30; renderHits(); });
-  const thumbEl = (h) => { if (h && h.th && h.th.startsWith("data:image/")) { const i = el("img", "thumb"); i.src = h.th; i.alt = "Обкладинка рилса @" + h.a; i.loading = "lazy"; return i; } return el("div", "thumb"); };
-  const openLink = (a) => a.addEventListener("click", (ev) => { if (TG.tg && TG.tg.openLink) { ev.preventDefault(); TG.tg.openLink(a.href); } });
-  function renderHits() {
-    if (views.hits.hidden) return;
-    const sph = $("h-sph").value, acc = $("h-acc").value, top = $("h-topic").value, ads = $("h-org").checked, q = $("h-q").value.trim().toLowerCase(), sort = $("h-sort").value;
-    const list = HITS.filter((h) => (!sph || h.sp === sph) && (!acc || h.a === acc) && (!top || h.t === top) && (ads || !h.p) && (!q || (h.cap || "").toLowerCase().includes(q)));
-    if (sort === "x") list.sort((a, b) => (b.x || 0) - (a.x || 0)); else if (sort === "d") list.sort((a, b) => b.d.localeCompare(a.d));
-    $("h-count").textContent = list.length ? "Знайдено " + nf.format(list.length) : "Нічого не знайдено. Змініть фільтри.";
-    const taken = new Set(ideas.map((i) => i.code).filter(Boolean));
-    $("hits").replaceChildren(...list.slice(0, limit).map((h) => {
-      const card = el("article", "hit"), b = el("div", "body");
-      b.style.display = "grid"; b.style.gap = "5px"; b.style.alignContent = "start"; b.style.minWidth = "0";
-      b.append(el("div", "v", fk(h.v)), el("div", "meta", "@" + h.a + " · " + dmy(h.d) + (h.x ? " · " + (h.x >= 10 ? Math.round(h.x) : String(Math.round(h.x * 10) / 10).replace(".", ",")) + "× медіани" : "")));
-      const chips = el("div", "chips"); if (h.p) chips.append(el("span", "chip ad", "реклама?")); if (h.sp && h.sp !== "Інше") chips.append(el("span", "chip", h.sp)); if (h.h) chips.append(el("span", "chip", "Хук: " + h.h)); if (h.t) chips.append(el("span", "chip", h.t)); if (h.s) chips.append(el("span", "chip", h.s + " с"));
-      b.append(chips, el("div", "cap", h.cap || "Без підпису"));
-      const act = el("div", "act");
-      const a = el("a", null, "Відкрити ↗"); a.href = h.u; a.target = "_blank"; a.rel = "noopener"; openLink(a);
-      if (taken.has(h.c)) act.append(el("span", "added", "Уже в ідеях"));
-      else if (canWrite) { const btn = el("button", "btn primary", "В ідеї"); btn.type = "button"; btn.addEventListener("click", () => addFromHit(h, btn)); act.append(btn); }
-      act.append(a); b.append(act);
-      card.append(thumbEl(h), b); return card;
-    }));
-    $("h-more").hidden = list.length <= limit;
+  function emptyBox(title, text, actions) {
+    const b = el("div", "empty"); b.append(el("b", null, title)); if (text) b.append(el("p", null, text));
+    if (actions && actions.length) { const r = el("div", "btns"); for (const [l, f] of actions) { const x = el("button", "btn sm", l); x.onclick = f; r.append(x); } b.append(r); }
+    return b;
   }
 
-  // ---- дошка ідей
-  function renderIdeas() {
-    $("n-ideas").textContent = ideas.length;
-    for (const lane of document.querySelectorAll(".lane")) {
-      const k = lane.dataset.lane, list = ideas.filter((i) => (i.status || "idea") === k).sort((a, b) => String(b.at).localeCompare(String(a.at)));
-      lane.querySelector(".c").textContent = list.length;
-      const box = lane.querySelector(".list");
-      const focused = box.contains(document.activeElement) ? document.activeElement : null;
-      if (focused && (focused.tagName === "TEXTAREA" || focused.tagName === "SELECT")) continue; // не стираємо нотатку, яку зараз пишуть
-      box.replaceChildren();
-      if (!list.length) box.append(el("div", "empty", k === "idea" ? (loaded ? "Поки порожньо. Відкрийте «Хіти конкурентів» і натисніть «В ідеї» або додайте свою ідею нижче." : "Завантажую спільний список…") : k === "work" ? "Перенесіть сюди ідею, яку вже готуєте." : "Тут будуть зняті рилси."));
-      for (const i of list) box.append(ideaCard(i));
-    }
+  // ---------- заготовки ----------
+  const sk = (w, h, r) => { const d = el("div", "sk"); d.style.width = w; d.style.height = h + "px"; if (r) d.style.borderRadius = r; return d; };
+  function skeleton() {
+    document.querySelectorAll(".lane .list2").forEach((box, k) => box.replaceChildren(...Array.from({ length: 3 - k }, () => { const c = el("div", "idea"); c.style.animation = "none"; const b = el("div"); b.append(sk("85%", 14), sk("55%", 10), sk("100%", 56, "10px")); b.children[1].style.marginTop = "8px"; b.children[2].style.marginTop = "12px"; c.append(sk("56px", 92), b); return c; })));
+    $("hits").replaceChildren(...Array.from({ length: 6 }, () => { const h = el("div", "hit"); h.style.animation = "none"; const c = sk("100%", 0, "12px"); c.style.height = "auto"; c.style.aspectRatio = "9 / 15"; h.append(c, sk("70%", 10), sk("100%", 36, "12px")); return h; }));
+    $("lanechips").replaceChildren(...[0, 1, 2].map(() => sk("96px", 36, "999px")));
+    $("h-sorts").replaceChildren(...[0, 1, 2].map(() => sk("96px", 36, "999px")));
   }
-  function ideaCard(i) {
-    const h = i.code ? byCode.get(i.code) : null;
-    const card = el("article", "idea" + (h ? "" : " own")), b = el("div", "body");
-    b.append(el("div", "t", i.title || (h ? "@" + h.a + " · " + fk(h.v) + " переглядів" : "Ідея")));
-    if (h) {
-      b.append(el("div", "meta", "@" + h.a + " · " + dmy(h.d) + " · " + fk(h.v)));
-      const chips = el("div", "chips"); if (h.t) chips.append(el("span", "chip", h.t)); if (h.p) chips.append(el("span", "chip ad", "реклама?")); b.append(chips);
-      b.append(el("div", "cap", h.cap || "Без підпису"));
-    }
-    const ta = el("textarea"); ta.value = i.note || ""; ta.placeholder = "Як адаптуємо: хук, хто в кадрі, заклик"; ta.setAttribute("aria-label", "Нотатка до ідеї"); ta.disabled = !canWrite;
-    ta.addEventListener("blur", async () => { if (ta.value === (i.note || "")) return; try { await patch(i.id, { note: ta.value.slice(0, 2000) }); say("Нотатку збережено"); } catch (e) { say(errText(e), true); } });
-    b.append(ta);
-    const row = el("div", "row");
-    const sel = el("select"); sel.setAttribute("aria-label", "Статус"); for (const [k, v] of Object.entries(LANES)) sel.append(new Option(v, k)); sel.value = i.status || "idea"; sel.disabled = !canWrite;
-    sel.addEventListener("change", async () => { const v = sel.value; sel.blur(); try { await patch(i.id, { status: v }); say("Перенесено: " + LANES[v]); } catch (e) { say(errText(e), true); } });
-    row.append(sel);
-    const link = i.url || (h && h.u);
-    if (link && /^https?:\/\//.test(link)) { const a = el("a", null, "Приклад ↗"); a.href = link; a.target = "_blank"; a.rel = "noopener"; a.style.fontSize = "13px"; openLink(a); row.append(a); }
-    if (canWrite) {
-      const del = el("button", "btn ghost", "Видалити"); del.type = "button";
-      del.addEventListener("click", async () => {
-        if (del.dataset.armed !== "1") { del.dataset.armed = "1"; del.textContent = "Точно видалити?"; setTimeout(() => { del.dataset.armed = ""; del.textContent = "Видалити"; }, 4000); return; }
-        try { await store.write("delete", { id: i.id }, () => { ideas = ideas.filter((x) => x.id !== i.id); }); say("Ідею видалено"); } catch (e) { say(errText(e), true); }
-      });
-      row.append(del);
-    }
-    b.append(row);
-    if (i.byName) b.append(el("div", "by", "Додав(ла): " + i.byName));
-    if (h) card.append(thumbEl(h));
-    card.append(b); return card;
+  skeleton();
+
+  function loadData() {
+    return new Promise((res, rej) => {
+      if (window.REELS_DATA) return res();
+      const s = document.createElement("script");
+      s.src = "data.js?v=" + Math.floor(Date.now() / 36e5);
+      s.onload = () => (window.REELS_DATA ? res() : rej(Object.assign(new Error("empty"), { data: true })));
+      s.onerror = () => rej(Object.assign(new Error("load"), { data: true }));
+      document.head.append(s);
+    });
   }
-  async function addFromHit(h, btn) {
-    btn.disabled = true; btn.textContent = "Додаю…";
-    const idea = { id: h.c, code: h.c, title: "", note: "", status: "idea", url: h.u, at: new Date().toISOString(), byName: me && me.name };
-    try { await store.write("add", { idea }, () => { ideas = ideas.filter((x) => x.id !== idea.id).concat(idea); }); say("Додано в ідеї: @" + h.a + ", " + fk(h.v) + " переглядів"); }
-    catch (e) { say(errText(e), true); }
-  }
-  $("a-add").addEventListener("click", async () => {
-    const title = $("a-title").value.trim(), url = $("a-link").value.trim(), note = $("a-note").value.trim();
-    if (!title) { say("Напишіть, про що рилс.", true); $("a-title").focus(); return; }
-    if (url && !/^https?:\/\//.test(url)) { say("Посилання має починатися з https://", true); return; }
-    $("a-add").disabled = true;
-    const idea = { id: "own-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), code: "", title: title.slice(0, 160), note: note.slice(0, 2000), status: "idea", url: url.slice(0, 300), at: new Date().toISOString(), byName: me && me.name };
-    try { await store.write("add", { idea }, () => { ideas = ideas.concat(idea); }); $("a-title").value = ""; $("a-link").value = ""; $("a-note").value = ""; say("Ідею додано"); }
-    catch (e) { say(errText(e), true); }
-    $("a-add").disabled = false;
+  Promise.all([loadData(), TG.gate({ quiet: true })]).then(([, user]) => init(user)).catch((e) => {
+    if (e && e.data) { $("upd").textContent = "Дані не завантажились"; const c = el("div", "card"); c.append(emptyBox("Не вдалося завантажити дані", "Перевірте інтернет і спробуйте ще раз. Якщо не допомагає, на GitHub у репозиторії reels має бути файл data.js (без «(1)» у назві).", [["Спробувати ще раз", () => location.reload()]])); document.querySelector("section[data-p='board']").replaceChildren(c); }
   });
 
-  if (location.hash === "#hits") show("hits");
-  renderIdeas();
-  TG.gate().then(async (user) => {
-    me = user; canWrite = true;
-    try { await store.load(true); } catch (e) { say("Не вдалося завантажити список. Перевірте з’єднання.", true); }
-    renderIdeas(); renderHits();
-    // автооновлення: раз на кілька секунд, поки сторінка відкрита
+  function init(me) {
+    const D = window.REELS_DATA;
+    const ZIN = "logocenter_zinchenko", OUT = 3, OUR_X = 3, AD = 0.4, POLL_MS = 5000;
+    const n = (v) => (v === "" || v == null ? null : Number(v));
+    const nf = new Intl.NumberFormat("uk-UA");
+    const fk = (v) => v == null ? "—" : v >= 1e4 ? new Intl.NumberFormat("uk-UA", { notation: "compact", maximumFractionDigits: 1 }).format(v) : nf.format(Math.round(v));
+    const fx = (x) => x == null ? "" : x >= 10 ? Math.round(x) + "×" : (Math.round(x * 10) / 10).toString().replace(".", ",") + "×";
+    const dmy = (d) => d ? d.split("-").reverse().join(".") : "—";
+    const open = (url) => { if (tg && tg.openLink) tg.openLink(url); else window.open(url, "_blank", "noopener"); };
+    const med = (a) => { const s = a.filter((x) => x != null).sort((p, q) => p - q), m = s.length >> 1; return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : null; };
+
+    const ALL = D.rows.map((r) => ({ c: r.code, a: r.account, d: r.date, v: n(r.views), t: r.topic, x: n(r.x_median), cap: r.caption, u: r.url, th: r.thumb, h: r.v_hook, sp: r.sphere || "Інше",
+      s: r.duration_s ? Math.round(n(r.duration_s)) : null, frame: r.v_frame, cta: r.v_cta || r.cta, goal: r.v_goal,
+      p: r.promoted === "так" || (n(r.like_rate) != null && n(r.like_rate) < AD) }));
+    const byCode = new Map(ALL.map((h) => [h.c, h]));
+    const OUR_MED = med(D.rows.filter((r) => r.account === ZIN && r.x_median !== "").map((r) => n(r.views))) || 5000 / OUR_X;
+    const THR = OUR_X * OUR_MED;
+    const HITS = ALL.filter((h) => h.a !== ZIN && h.v && (h.v >= THR || (h.x != null && h.x >= OUT && h.v >= OUR_MED))).sort((a, b) => b.v - a.v);
+    const LANES = { idea: "Ідеї", work: "У роботі", done: "Знято" };
+    let ideas = [], ver = null, loaded = false, lane = "idea", sort = "v", limit = 24;
+    $("upd").textContent = "Спільний список · дані оновлено " + dmy(D.updated);
+    $("rule").textContent = `Органічні хіти конкурентів: від ${nf.format(Math.round(THR))} переглядів (утричі більше за вашу медіану ${nf.format(Math.round(OUR_MED))}) або втричі вище звичайного рівня свого акаунта. Рилси, схожі на рекламу, приховано.`;
+    const errText = (e) => e && (e.code === "expired" || e.code === "not_allowed") ? "Доступ закінчився. Перевідкрийте сторінку з бота." : "Не вдалося зберегти. Перевірте з’єднання.";
+
+    // ---------- сховище ----------
+    const store = {
+      async load(force) { const j = await TG.api("list", { ver: force ? null : ver }); if (j.same) return false; ver = j.ver; ideas = j.ideas; loaded = true; return true; },
+      async write(action, payload, local) {
+        local(); render();
+        try { const j = await TG.api(action, payload); ver = j.ver; if (j.ideas) ideas = j.ideas; }
+        catch (e) { await store.load(true).catch(() => {}); throw e; }
+        finally { render(); }
+      },
+    };
+    const patch = (id, fields) => store.write("patch", { id, fields }, () => { const i = ideas.find((x) => x.id === id); if (i) Object.assign(i, fields); });
+    async function addHit(h, btn) {
+      if (btn) { btn.disabled = true; btn.lastChild.textContent = "Додаю…"; }
+      const idea = { id: h.c, code: h.c, title: "", note: "", status: "idea", url: h.u, at: new Date().toISOString(), byName: me && me.name };
+      try { await store.write("add", { idea }, () => { ideas = ideas.filter((x) => x.id !== idea.id).concat(idea); }); toast("Додано в ідеї: @" + h.a); }
+      catch (e) { toast(errText(e), true); if (btn) { btn.disabled = false; btn.lastChild.textContent = "В ідеї"; } }
+    }
+
+    // ---------- розділи ----------
+    const TITLES = { board: "Дошка ідей", hits: "Хіти конкурентів" };
+    let tab = "board";
+    function setTab(t) {
+      tab = t; $("title").textContent = TITLES[t];
+      document.querySelectorAll(".item[data-t]").forEach((b) => { if (b.dataset.t === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+      document.querySelectorAll("section[data-p]").forEach((s) => { s.hidden = s.dataset.p !== t; });
+      drawer(false); render(); window.scrollTo({ top: 0 });
+      try { history.replaceState(null, "", "#" + t); } catch (e) {}
+    }
+    document.querySelectorAll(".item[data-t]").forEach((b) => { b.onclick = () => setTab(b.dataset.t); });
+    document.querySelector('.item[data-act="add"]').onclick = () => { drawer(false); addSheet(); };
+    $("fab").onclick = () => addSheet();
+
+    // ---------- дошка ----------
+    function renderBoard() {
+      const counts = {};
+      for (const k in LANES) counts[k] = ideas.filter((i) => (i.status || "idea") === k).length;
+      $("lanechips").replaceChildren(...Object.entries(LANES).map(([k, t]) => { const b = el("button", "chip", t + " · " + counts[k]); b.setAttribute("aria-pressed", String(lane === k)); b.onclick = () => { lane = k; renderBoard(); }; return b; }));
+      for (const ln of document.querySelectorAll(".lane")) {
+        const k = ln.dataset.lane; ln.classList.toggle("cur", k === lane);
+        ln.querySelector(".c").textContent = counts[k];
+        const box = ln.querySelector(".list2");
+        const f = box.contains(document.activeElement) ? document.activeElement : null;
+        if (f && (f.tagName === "TEXTAREA")) continue; // не стираємо нотатку, яку зараз пишуть
+        const list = ideas.filter((i) => (i.status || "idea") === k).sort((a, b) => String(b.at).localeCompare(String(a.at)));
+        if (!loaded) continue;
+        if (!list.length) {
+          box.replaceChildren(k === "idea" ? emptyBox("Поки порожньо", "Знайдіть рилс, що вистрілив у конкурентів, або запишіть свою ідею.", [["Відкрити хіти", () => setTab("hits")], ["Своя ідея", () => addSheet()]])
+            : k === "work" ? emptyBox("Нічого в роботі", "Натисніть «В роботу» на картці ідеї, яку вже готуєте.") : emptyBox("Ще нічого не знято", "Тут з’являться рилси, які ви вже зняли."));
+          continue;
+        }
+        box.replaceChildren(...list.map(ideaCard));
+      }
+    }
+    function ideaCard(i) {
+      const h = i.code ? byCode.get(i.code) : null;
+      const card = el("article", "idea" + (h ? "" : " own")), b = el("div"); b.style.minWidth = "0";
+      if (h) { const th = el("button", "th"); th.setAttribute("aria-label", "Подробиці рилса"); if (h.th) th.style.backgroundImage = `url("${h.th}")`; th.onclick = () => hitSheet(h); card.append(th); }
+      b.append(el("div", "t", i.title || (h ? (h.t && h.t !== "Без підпису" ? h.t : "Рилс @" + h.a) : "Ідея")));
+      if (h) b.append(el("div", "meta", "@" + h.a + " · " + fk(h.v) + " переглядів" + (h.x ? " · " + fx(h.x) : "")));
+      const ta = el("textarea"); ta.value = i.note || ""; ta.placeholder = "Як адаптуємо: хук, хто в кадрі, заклик"; ta.setAttribute("aria-label", "Нотатка");
+      ta.addEventListener("blur", async () => { if (ta.value === (i.note || "")) return; try { await patch(i.id, { note: ta.value.slice(0, 2000) }); toast("Нотатку збережено"); } catch (e) { toast(errText(e), true); } });
+      b.append(ta);
+      const acts = el("div", "acts"), st = i.status || "idea";
+      const mv = (to, label, icon, primary) => { const x = el("button", "btn sm" + (primary ? " p" : "")); x.append(ico(icon), document.createTextNode(label)); x.onclick = async () => { try { await patch(i.id, { status: to }); toast("Перенесено: " + LANES[to]); } catch (e) { toast(errText(e), true); } }; return x; };
+      if (st === "idea") acts.append(mv("work", "В роботу", "next", true));
+      if (st === "work") acts.append(mv("idea", "Назад", "prev"), mv("done", "Знято", "check", true));
+      if (st === "done") acts.append(mv("work", "Повернути", "prev"));
+      const link = i.url || (h && h.u);
+      if (link && /^https?:\/\//.test(link)) { const a = el("button", "btn sm ghost"); a.append(ico("ext")); a.setAttribute("aria-label", "Відкрити приклад"); a.onclick = () => open(link); acts.append(a); }
+      const del = el("button", "btn sm ghost danger"); del.append(ico("trash")); del.setAttribute("aria-label", "Видалити");
+      del.onclick = async () => {
+        if (del.dataset.armed !== "1") { del.dataset.armed = "1"; del.append(document.createTextNode("Точно?")); setTimeout(() => { del.dataset.armed = ""; if (del.lastChild.nodeType === 3) del.lastChild.remove(); }, 4000); return; }
+        try { await store.write("delete", { id: i.id }, () => { ideas = ideas.filter((x) => x.id !== i.id); }); toast("Ідею видалено"); } catch (e) { toast(errText(e), true); }
+      };
+      acts.append(del); b.append(acts);
+      if (i.byName) b.append(el("div", "by", "Додав(ла): " + i.byName));
+      card.append(b); return card;
+    }
+
+    // ---------- хіти ----------
+    const SORTS = [["v", "Перегляди"], ["x", "× медіани"], ["d", "Нові"]];
+    for (const a of [...new Set(HITS.map((h) => h.sp))].sort((a, b) => a.localeCompare(b, "uk"))) $("h-sph").append(new Option(a, a));
+    for (const a of [...new Set(HITS.map((h) => h.a))].sort()) $("h-acc").append(new Option("@" + a, a));
+    for (const t of [...new Set(HITS.map((h) => h.t).filter(Boolean))].sort((a, b) => a.localeCompare(b, "uk"))) $("h-topic").append(new Option(t, t));
+    for (const id of ["h-sph", "h-acc", "h-topic"]) $(id).onchange = () => { limit = 24; renderHits(); };
+    let qT; $("h-q").oninput = () => { clearTimeout(qT); qT = setTimeout(() => { limit = 24; renderHits(); }, 200); };
+    $("h-more").onclick = () => { limit += 24; renderHits(); };
+    let showAds = false;
+    function renderHits() {
+      $("h-sorts").replaceChildren(...SORTS.map(([k, t]) => { const b = el("button", "chip", t); b.setAttribute("aria-pressed", String(sort === k)); b.onclick = () => { sort = k; limit = 24; renderHits(); }; return b; }),
+        (() => { const b = el("button", "chip", "З рекламою"); b.setAttribute("aria-pressed", String(showAds)); b.onclick = () => { showAds = !showAds; limit = 24; renderHits(); }; return b; })());
+      const sp = $("h-sph").value, acc = $("h-acc").value, top = $("h-topic").value, q = $("h-q").value.trim().toLowerCase();
+      const list = HITS.filter((h) => (!sp || h.sp === sp) && (!acc || h.a === acc) && (!top || h.t === top) && (showAds || !h.p) && (!q || (h.cap || "").toLowerCase().includes(q)));
+      if (sort === "x") list.sort((a, b) => (b.x || 0) - (a.x || 0)); else if (sort === "d") list.sort((a, b) => b.d.localeCompare(a.d)); else list.sort((a, b) => b.v - a.v);
+      $("h-count").textContent = list.length ? "Знайдено " + nf.format(list.length) : "";
+      const taken = new Set(ideas.map((i) => i.code).filter(Boolean));
+      const cards = list.slice(0, limit).map((h, k) => {
+        const w = el("div", "hit"); w.style.animationDelay = Math.min(k % 24, 10) * 40 + "ms";
+        const t = el("button", "tile"), c = el("span", "cover"); if (h.th) c.style.backgroundImage = `url("${h.th}")`;
+        c.append(el("span", "v", fk(h.v))); if (h.x) c.append(el("span", "xx", fx(h.x)));
+        t.append(c, el("div", "who", "@" + h.a), el("div", "tp", h.t || h.h || "Без підпису")); t.onclick = () => hitSheet(h);
+        const act = el("div", "act");
+        if (taken.has(h.c)) act.append(el("span", "added", "✓ Уже в ідеях"));
+        else { const b = el("button", "btn sm p"); b.append(ico("idea"), document.createTextNode("В ідеї")); b.onclick = () => addHit(h, b); act.append(b); }
+        w.append(t, act); return w;
+      });
+      if (!list.length) {
+        const acts = [];
+        if (q) acts.push(["Очистити пошук", () => { $("h-q").value = ""; renderHits(); }]);
+        if (sp || acc || top) acts.push(["Скинути фільтри", () => { $("h-sph").value = ""; $("h-acc").value = ""; $("h-topic").value = ""; renderHits(); }]);
+        if (!showAds) acts.push(["Показати й рекламу", () => { showAds = true; renderHits(); }]);
+        $("hits").replaceChildren(emptyBox("Нічого не знайдено", q ? `Немає хітів зі словом «${$("h-q").value.trim()}» у підписі.` : "За цими фільтрами хітів немає.", acts));
+        $("hits").style.display = "block";
+      } else { $("hits").style.display = ""; $("hits").replaceChildren(...cards); }
+      $("h-more").hidden = list.length <= limit;
+    }
+
+    // ---------- аркуші ----------
+    function hitSheet(h) {
+      const hd = el("div", "hd"), cov = el("div", "cov"); if (h.th) cov.style.backgroundImage = `url("${h.th}")`;
+      const info = el("div"); info.style.minWidth = "0";
+      info.append(el("div", "big", fk(h.v)), el("div", "sub", "переглядів · @" + h.a + " · " + dmy(h.d)));
+      if (h.x != null) info.append(el("div", "sub", fx(h.x) + " від звичайного рівня акаунта"));
+      const tags = el("div", "tags"); for (const t of [h.sp, h.t]) if (t) tags.append(el("span", "tag", t)); if (h.p) tags.append(el("span", "ad", "схоже на рекламу"));
+      info.append(tags); hd.append(cov, info);
+      const kv = el("dl", "kv");
+      for (const [k, v] of [["Хук", h.h], ["Перший кадр", h.frame], ["Заклик", h.cta], ["Задача", h.goal], ["Тривалість", h.s ? h.s + " с" : null]]) if (v) kv.append(el("dt", null, k), el("dd", null, v));
+      const btns = el("div", "btns"), go = el("button", "btn"); go.append(ico("ext"), document.createTextNode("Instagram")); go.onclick = () => open(h.u);
+      const taken = ideas.some((i) => i.code === h.c);
+      if (taken) btns.append(el("span", "added", "✓ Уже в ідеях")); else { const b = el("button", "btn p"); b.append(ico("idea"), document.createTextNode("В ідеї")); b.onclick = async () => { await addHit(h, b); closeSheet(); }; btns.append(b); }
+      btns.append(go);
+      sheet([hd, kv, el("div", "cap", h.cap || "Без підпису"), btns]);
+    }
+    function addSheet() {
+      const f = el("div", "form");
+      const L = (label, input) => { const l = el("label", null, label); l.append(input); return l; };
+      const t = el("input"); t.type = "text"; t.maxLength = 160; t.placeholder = "Напр.: 5 ознак, що дитині час до логопеда";
+      const u = el("input"); u.type = "url"; u.maxLength = 300; u.placeholder = "https://www.instagram.com/reel/…";
+      const nt = el("textarea"); nt.maxLength = 2000; nt.placeholder = "Хук у першу секунду, хто в кадрі, заклик";
+      const go = el("button", "btn p"); go.append(ico("plus"), document.createTextNode("Додати в ідеї"));
+      go.onclick = async () => {
+        const title = t.value.trim(), url = u.value.trim(), note = nt.value.trim();
+        if (!title) { toast("Напишіть, про що рилс.", true); t.focus(); return; }
+        if (url && !/^https?:\/\//.test(url)) { toast("Посилання має починатися з https://", true); return; }
+        go.disabled = true;
+        const idea = { id: "own-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), code: "", title: title.slice(0, 160), note: note.slice(0, 2000), status: "idea", url: url.slice(0, 300), at: new Date().toISOString(), byName: me && me.name };
+        try { await store.write("add", { idea }, () => { ideas = ideas.concat(idea); }); toast("Ідею додано"); closeSheet(); lane = "idea"; if (tab !== "board") setTab("board"); }
+        catch (e) { toast(errText(e), true); go.disabled = false; }
+      };
+      f.append(L("Про що рилс", t), L("Посилання на приклад (необов’язково)", u), L("Як знімаємо", nt));
+      const btns = el("div", "btns"); btns.append(go);
+      sheet([el("h2", null, "Своя ідея"), f, btns]);
+      setTimeout(() => t.focus(), 320);
+    }
+
+    function render() { renderBoard(); if (tab === "hits") renderHits(); }
+    const start = location.hash.slice(1);
+    store.load(true).catch(() => toast("Не вдалося завантажити список ідей. Перевірте з’єднання.", true)).finally(() => { loaded = true; if (TITLES[start]) setTab(start); else render(); });
     let busy = false;
     setInterval(async () => {
-      if (busy || document.hidden) return;
-      busy = true;
-      try { if (await store.load()) { renderIdeas(); renderHits(); } }
-      catch (e) { if (e.code === "expired" || e.code === "not_allowed") say(errText(e), true); }
+      if (busy || document.hidden) return; busy = true;
+      try { if (await store.load()) render(); } catch (e) { if (e.code === "expired" || e.code === "not_allowed") toast(errText(e), true); }
       busy = false;
     }, POLL_MS);
-  }).catch(() => {});
+  }
 })();
 </script>
 </body>

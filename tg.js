@@ -42,20 +42,23 @@
   }
 
   // Повертає користувача, якщо його ID дозволено; інакше показує пояснення і зупиняє сторінку.
-  async function gate() {
-    root.classList.add("locked");
-    if (!tg || !tg.initData) { lock("Відкрийте цю сторінку через бота в Telegram."); throw new Error("no_telegram"); }
-    if (!cfg.API_URL || !/^https:\/\//.test(cfg.API_URL)) { lock("Не налаштовано: вставте адресу Apps Script у файл config.js."); throw new Error("no_api"); }
-    lock("Перевіряю доступ…");
+  // gate({ quiet: true }) — не ховає сторінку під час перевірки (щоб було видно заготовки).
+  async function gate(opts) {
+    const quiet = opts && opts.quiet;
+    if (!quiet) root.classList.add("locked");
+    if (!tg || !tg.initData) { root.classList.add("locked"); lock("Відкрийте цю сторінку через бота в Telegram."); throw new Error("no_telegram"); }
+    if (!cfg.API_URL || !/^https:\/\//.test(cfg.API_URL)) { root.classList.add("locked"); lock("Не налаштовано: вставте адресу Apps Script у файл config.js."); throw new Error("no_api"); }
+    if (!quiet) lock("Перевіряю доступ…");
     try {
       const j = await api("whoami");
       root.classList.remove("locked");
-      document.getElementById("gate").remove();
+      const g = document.getElementById("gate"); if (g) g.remove();
       return j.user;
     } catch (e) {
+      root.classList.add("locked");
       if (e.code === "not_allowed") lock("Доступу немає. Ваш Telegram ID: " + e.id + ". Перешліть його власнику, щоб він додав вас у список.");
       else if (e.code === "expired") lock("Сесія застаріла. Закрийте і знову відкрийте сторінку з бота.");
-      else lock("Не вдалося перевірити доступ. Перевірте інтернет і відкрийте сторінку ще раз.");
+      else lock("Не вдалося перевірити доступ (код: " + (e.code || e.name || "мережа") + "). Перевірте інтернет і відкрийте сторінку ще раз.");
       throw e;
     }
   }

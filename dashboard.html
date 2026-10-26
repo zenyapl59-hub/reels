@@ -3,1143 +3,765 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Reels логопедів</title>
+<title>Reels: дашборд</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="config.js"></script>
-<script src="data.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500;600&display=swap">
 <style>
+/* ---------- палітра: два акценти (ринок і ми) + нейтральні ---------- */
 :root {
-  --font-anthropic-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
-  --font-anthropic-serif: Georgia, "Times New Roman", serif;
-  --color-bg: #f4f5f7; --color-panel: #ffffff; --color-fg: #1b1f24; --color-fg-muted: #5f6873;
-  --color-border-line: #e1e5ea; --color-ok: #2e7d4f; --color-warn: #a86400; --color-bad: #b3261e;
-  --cds-chart-axis: #8a939e; --cds-chart-grid: #eceff2; --cds-chart-muted: #b9c0c8; --cds-chart-reference: #8a939e;
-  --cds-surface-popover: #ffffff; --cds-border: #d6dbe1; --cds-shadow-popover: 0 6px 20px rgba(0,0,0,.12); --cds-text-secondary: #5f6873;
-  --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 12px; --cds-gap-lg: 20px;
-  --cds-pad-xs: 4px; --cds-pad-sm: 8px; --cds-pad-lg: 16px; --cds-radius: 10px;
-  --cds-font-size-caption: 12.5px; --cds-font-size-body: 14px; --cds-font-size-heading: 16px; --cds-font-size-title: 26px;
-  --cds-font-weight-medium: 600; --cds-dur-slow: .3s;
-  --c1: #1f7a85; --c2: #c2621a;
+  --bg: #f4f6f8; --panel: #ffffff; --ink: #18202b; --muted: #5d6877; --line: #e1e6ec; --soft: #eef2f5; --sk: #e3e8ee; --sk-hi: #f3f6f8;
+  --accent: #1f6f78; --accent-ink: #ffffff; --accent-soft: #e2f0f1;
+  --us: #c2621a; --us-soft: #fbeadc; --c3: #7d8a99;
+  --warn-soft: #fbefd9; --warn-ink: #7a4b00; --good: #2e7d4f; --bad: #b3261e;
+  --shadow: 0 8px 28px rgba(16, 24, 40, .14);
+  --display: "Unbounded", "Onest", system-ui, sans-serif; --body: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r: 16px; --navw: 232px; --ease: cubic-bezier(.2, .8, .2, 1);
   color-scheme: light;
 }
 :root[data-theme="dark"] {
-  --color-bg: #13171c; --color-panel: #1c2229; --color-fg: #e8ecf0; --color-fg-muted: #9ba5b0;
-  --color-border-line: #2c343d; --color-ok: #6cc28f; --color-warn: #e5a54b; --color-bad: #f08a80;
-  --cds-chart-axis: #7d8792; --cds-chart-grid: #262d35; --cds-chart-muted: #4a535d; --cds-chart-reference: #7d8792;
-  --cds-surface-popover: #232a32; --cds-border: #38414b; --cds-shadow-popover: 0 6px 20px rgba(0,0,0,.45); --cds-text-secondary: #9ba5b0;
-  --c1: #5cbcc6; --c2: #f0a060;
+  --bg: #11161c; --panel: #19212a; --ink: #e8edf2; --muted: #9aa7b6; --line: #2a3542; --soft: #222c37; --sk: #222c37; --sk-hi: #2e3a48;
+  --accent: #5fb7bf; --accent-ink: #0d1a1c; --accent-soft: #1b3236;
+  --us: #f0a060; --us-soft: #3a2a1c; --c3: #8d9aaa;
+  --warn-soft: #3a2c12; --warn-ink: #f2c879; --good: #6cc28f; --bad: #f08a80;
+  --shadow: 0 8px 28px rgba(0, 0, 0, .5);
   color-scheme: dark;
 }
-html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
-#dash-root { padding: 16px max(16px, env(safe-area-inset-right)) 40px max(16px, env(safe-area-inset-left)); max-width: 1180px; margin: 0 auto; font-size: 14px; line-height: 1.45; }
-.locked #dash-root { visibility: hidden; }
-.dash-skeleton { opacity: .5; }
-.toplink { font-family: var(--font-anthropic-sans); display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--color-fg-muted); margin-bottom: 10px; }
-.toplink a { color: var(--c1); }
-a { color: var(--c1); }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); -webkit-tap-highlight-color: transparent; }
+body.lock-scroll { overflow: hidden; }
+.locked .shell { visibility: hidden; }
+a { color: var(--accent); }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* ---------- каркас і бокове меню ---------- */
+.shell { display: grid; grid-template-columns: var(--navw) minmax(0, 1fr); min-height: 100vh; transition: grid-template-columns .3s var(--ease); }
+body.mini { --navw: 76px; }
+.nav { position: sticky; top: 0; height: 100vh; overflow: hidden; background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; padding: 16px 12px; }
+.brand { display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 8px; margin-bottom: 12px; white-space: nowrap; }
+.logo { width: 36px; height: 36px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; flex: none; font: 600 14px var(--display); }
+.brand b { font: 600 14px/1.2 var(--display); }
+.item { display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: none; color: var(--muted); font-weight: 500; text-decoration: none; white-space: nowrap; width: 100%; text-align: left; transition: background .2s, color .2s; }
+.item:hover { background: var(--soft); color: var(--ink); }
+.item[aria-current="page"] { background: var(--accent-soft); color: var(--ink); }
+.item[aria-current="page"] .ico { color: var(--accent); }
+.lbl, .brand b { transition: opacity .2s; }
+.nav .sep { height: 1px; background: var(--line); margin: 8px 6px; }
+.nav .spacer { flex: 1; }
+.collapse .ico { transition: transform .3s var(--ease); }
+body.mini .brand b { opacity: 0; pointer-events: none; }
+/* згорнуте меню: іконка + короткий підпис під нею */
+body.mini .item { flex-direction: column; justify-content: center; gap: 2px; height: 56px; padding: 0 2px; text-align: center; }
+body.mini .item .lbl { font-size: 10px; line-height: 1.1; white-space: normal; }
+body.mini .collapse .ico { transform: rotate(180deg); }
+.scrim { display: none; }
+.menu-btn { display: none; width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); place-items: center; flex: none; }
+@media (max-width: 1023px) and (min-width: 640px) {
+  body { --navw: 76px; }
+  .brand b { opacity: 0; pointer-events: none; }
+  .item { flex-direction: column; justify-content: center; gap: 2px; height: 56px; padding: 0 2px; text-align: center; }
+  .item .lbl { font-size: 10px; line-height: 1.1; white-space: normal; }
+  .collapse { display: none; }
+}
+@media (max-width: 639px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .nav { position: fixed; z-index: 40; left: 0; top: 0; bottom: 0; height: auto; width: 280px; transform: translateX(-102%); transition: transform .3s var(--ease); box-shadow: var(--shadow); padding-top: max(16px, env(safe-area-inset-top)); }
+  body.drawer .nav { transform: none; }
+  .scrim { display: block; position: fixed; inset: 0; z-index: 39; background: rgba(0, 0, 0, .4); opacity: 0; pointer-events: none; transition: opacity .3s; }
+  body.drawer .scrim { opacity: 1; pointer-events: auto; }
+  .collapse { display: none; }
+  .menu-btn { display: grid; }
+  body.mini .brand b { opacity: 1; pointer-events: auto; }
+  body.mini .item { flex-direction: row; justify-content: flex-start; gap: 12px; height: 44px; padding: 0 14px; text-align: left; }
+  body.mini .item .lbl { font-size: 15px; white-space: nowrap; }
+}
+
+/* ---------- основна колонка ---------- */
+.app { width: 100%; max-width: 1040px; margin: 0 auto; padding: 16px 24px 64px; display: grid; gap: 16px; align-content: start; min-width: 0; }
+@media (max-width: 639px) { .app { padding: 12px max(16px, env(safe-area-inset-right)) 48px max(16px, env(safe-area-inset-left)); gap: 12px; } }
+.hdr { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.hdr .tt { min-width: 0; flex: 1; }
+h1 { font: 600 clamp(18px, 4.6vw, 24px)/1.2 var(--display); margin: 0; letter-spacing: -.01em; }
+.upd { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.hdr .to-ideas { flex: none; font-size: 13px; white-space: nowrap; }
+@media (max-width: 639px) { .hdr .to-ideas { display: none; } }
+.bar { position: sticky; top: 0; z-index: 10; background: var(--bg); margin: 0 -4px; padding: 8px 4px; display: grid; gap: 8px; transition: box-shadow .2s; }
+.bar.stuck { box-shadow: 0 1px 0 var(--line); }
+.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chips[hidden] { display: none; }
+.chip { flex: none; min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); font-size: 13px; font-weight: 500; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; transition: background .2s, color .2s, border-color .2s; }
+.chip:hover { border-color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip.f { background: var(--accent-soft); border-color: transparent; }
+.chip.f .ico { width: 14px; height: 14px; }
+section[data-p] { display: grid; gap: 12px; min-width: 0; animation: enter .35s var(--ease) both; }
+section[data-p][hidden] { display: none; }
+@keyframes enter { from { opacity: 0; transform: translateY(8px); } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; min-width: 0; }
+h2 { font-size: 17px; font-weight: 600; margin: 0; line-height: 1.3; }
+.note { color: var(--muted); font-size: 13px; margin: 4px 0 12px; }
+.pagenote { color: var(--muted); font-size: 13px; margin: 0; }
+
+/* ---------- головні цифри ---------- */
+.hero { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 639px) { .hero { gap: 8px; } .hero .card { padding: 12px; } }
+@media (max-width: 359px) { .hero { grid-template-columns: 1fr; } }
+.k { color: var(--muted); font-size: 12px; line-height: 1.3; }
+.big { font: 600 clamp(20px, 6vw, 28px)/1.15 var(--display); margin-top: 8px; font-variant-numeric: tabular-nums; }
+.big.sm { font: 600 15px/1.3 var(--body); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.sub { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.35; }
+.sub.up { color: var(--good); } .sub.down { color: var(--bad); }
+.takes { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+.takes li { display: grid; grid-template-columns: 32px 1fr; gap: 12px; align-items: start; font-size: 14px; animation: enter .4s var(--ease) both; }
+.takes .ic { width: 32px; height: 32px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+.takes .ic .ico { width: 18px; height: 18px; }
+
+/* ---------- стрічка рилсів ---------- */
+.strip { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+.strip.end { -webkit-mask-image: none; mask-image: none; }
+.strip.is-empty { display: block; -webkit-mask-image: none; mask-image: none; }
+.strip::-webkit-scrollbar { display: none; }
+.tile { flex: none; width: 132px; scroll-snap-align: start; border: 0; padding: 0; background: none; text-align: left; animation: enter .45s var(--ease) both; }
+.cover { width: 132px; height: 208px; border-radius: 12px; background: var(--soft) center/cover; position: relative; overflow: hidden; display: block; transition: transform .25s var(--ease), box-shadow .25s; }
+@media (hover: hover) { .tile:hover .cover { transform: translateY(-3px); box-shadow: var(--shadow); } }
+.cover .v { position: absolute; left: 6px; bottom: 6px; background: rgba(0, 0, 0, .64); color: #fff; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.cover .xx { position: absolute; right: 6px; top: 6px; background: var(--accent); color: var(--accent-ink); font-size: 12px; font-weight: 600; padding: 2px 6px; border-radius: 999px; }
+.tile .who { font-size: 12px; color: var(--muted); margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile .tp { font-size: 13px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* ---------- смуги ---------- */
+.rows { display: grid; gap: 4px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; padding: 10px 8px; margin: 0 -8px; border: 0; border-radius: 12px; background: none; text-align: left; width: calc(100% + 16px); transition: background .2s; }
+button.row:hover, .row.on { background: var(--soft); }
+.row .l { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .r { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.track { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--soft); overflow: hidden; position: relative; transition: height .2s var(--ease); }
+.row.on .track, button.row:hover .track { background: var(--panel); }
+@media (hover: hover) { button.row:hover .track { height: 10px; } button.row:hover .fill { filter: brightness(1.08); } }
+.fill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 4px; background: var(--accent); transition: width .75s var(--ease), filter .2s; }
+.row .mini { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+
+/* ---------- список рилсів ---------- */
+.search { position: relative; margin: 12px 0 8px; }
+.search .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); width: 18px; height: 18px; }
+input[type=search] { font: inherit; font-size: 15px; width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px 8px 38px; background: var(--panel); color: var(--ink); }
+.list .it { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 4px; border: 0; border-bottom: 1px solid var(--line); background: none; width: 100%; text-align: left; transition: background .2s; }
+.list .it:last-child { border-bottom: 0; }
+@media (hover: hover) { .list .it:hover { background: var(--soft); } }
+.th { width: 44px; height: 68px; border-radius: 8px; background: var(--soft) center/cover; }
+.list .a { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.list .a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list .b { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list .c { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; font-size: 14px; }
+.list .c small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+.ad { flex: none; font-size: 11px; font-weight: 500; padding: 1px 6px; border-radius: 999px; background: var(--warn-soft); color: var(--warn-ink); }
+.more { margin-top: 8px; width: 100%; min-height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); font-weight: 500; }
+
+/* ---------- акаунти ---------- */
+.accs { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.acc { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: var(--r); padding: 16px; animation: enter .4s var(--ease) both; transition: border-color .2s, box-shadow .2s, transform .2s var(--ease); }
+@media (hover: hover) { .acc:hover { box-shadow: var(--shadow); transform: translateY(-2px); } }
+.acc.us { border-color: var(--us); }
+.av { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-weight: 600; font-size: 17px; background: var(--accent-soft); color: var(--accent); }
+.av.us { background: var(--us-soft); color: var(--us); }
+.acc .n { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.stats div { font-size: 12px; color: var(--muted); }
+.stats b { display: block; font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.spark { display: block; width: 100%; height: 32px; margin-top: 8px; overflow: visible; }
+
+/* ---------- порівняння ---------- */
+.pick { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 479px) { .pick { grid-template-columns: 1fr; } }
+.pick label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.pick label span { display: flex; align-items: center; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
+select { font: inherit; font-size: 15px; width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; background: var(--panel); color: var(--ink); }
+.cmp { display: grid; gap: 16px; margin-top: 12px; }
+.cmp .lab { font-size: 13px; color: var(--muted); }
+.dbar { display: grid; grid-template-columns: minmax(0, 1fr) 72px; gap: 8px; align-items: center; margin-top: 6px; }
+.dbar .track { height: 10px; grid-column: auto; }
+.dbar .val { font-size: 13px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--muted); flex-wrap: wrap; margin-top: 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ---------- графік ---------- */
+.chart { position: relative; margin-top: 8px; touch-action: pan-y; }
+.chart svg { display: block; width: 100%; overflow: visible; }
+.chart .ax { font-size: 11px; fill: var(--muted); font-family: var(--body); }
+.chart .gl { stroke: var(--line); stroke-dasharray: 3 4; }
+.ln { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.1s var(--ease) forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.pt { opacity: 0; animation: fade .3s ease .9s forwards; transform-box: fill-box; transform-origin: center; transition: transform .2s var(--ease); }
+.pt.on { transform: scale(1.8); }
+@keyframes fade { to { opacity: 1; } }
+.guide { stroke: var(--muted); stroke-width: 1; opacity: 0; transition: opacity .15s; }
+.guide.on { opacity: .5; }
+.tip { position: absolute; top: 0; z-index: 3; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 8px 10px; font-size: 12px; min-width: 120px; opacity: 0; transform: translateY(4px); transition: opacity .15s, transform .15s; }
+.tip.on { opacity: 1; transform: none; }
+.tip b { display: block; margin-bottom: 4px; font-size: 12px; }
+.tip div { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+.tip div span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+
+/* ---------- заготовки й порожні стани ---------- */
+.sk { background: linear-gradient(90deg, var(--sk) 25%, var(--sk-hi) 37%, var(--sk) 63%); background-size: 400% 100%; animation: sk 1.4s ease infinite; border-radius: 8px; }
+@keyframes sk { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+.skl { height: 12px; margin-top: 8px; }
+.empty { display: grid; gap: 6px; justify-items: start; padding: 16px; border: 1px dashed var(--line); border-radius: 12px; background: var(--soft); margin-top: 4px; animation: enter .3s var(--ease) both; }
+.empty b { font-size: 14px; }
+.empty p { margin: 0; font-size: 13px; color: var(--muted); }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.btn { min-height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); font-weight: 500; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; transition: background .2s, border-color .2s; }
+.btn:hover { border-color: var(--muted); }
+.btn.sm { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.btn.p { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn[disabled] { opacity: .6; cursor: default; }
+.btn .ico { width: 18px; height: 18px; }
+
+/* ---------- нижній аркуш ---------- */
+.shade { position: fixed; inset: 0; background: rgba(0, 0, 0, .45); z-index: 50; opacity: 0; pointer-events: none; transition: opacity .25s; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 51; max-height: 88vh; overflow-y: auto; overscroll-behavior: contain; background: var(--panel); border-radius: 20px 20px 0 0; padding: 12px 16px calc(24px + env(safe-area-inset-bottom)); transform: translateY(105%); visibility: hidden; transition: transform .3s var(--ease), visibility 0s .3s; max-width: 720px; margin: 0 auto; }
+body.sheet-open .shade { opacity: 1; pointer-events: auto; }
+body.sheet-open .sheet { transform: none; visibility: visible; transition: transform .3s var(--ease); }
+.grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 12px; }
+.x { position: absolute; right: 12px; top: 10px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--soft); display: grid; place-items: center; }
+.x .ico { width: 18px; height: 18px; }
+.sheet .hd { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 16px; padding-right: 32px; }
+.sheet .cov { width: 112px; height: 196px; border-radius: 12px; background: var(--soft) center/cover; }
+.sheet .big { font-size: 22px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 14px; margin: 16px 0 0; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; }
+.cap { font-size: 14px; color: var(--muted); margin: 12px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); }
+.sheet h2 { margin-top: 16px; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; } .ln { stroke-dashoffset: 0; } .pt { opacity: 1; } }
 </style>
 </head>
 <body>
 <script src="tg.js"></script>
-<script>
-// Мінімальна заміна середовища дашборду Claude: дані з data.js, фільтри, перерахунок.
-window.dash = (() => {
-  const D = window.REELS_DATA || { rows: [] };
-  const calcs = {}, cache = {}, subs = [];
-  let params = {};
-  const css = (v) => "var(" + v + ")";
-  const api = {
-    colors: [css("--c1"), css("--c2"), "#7a5fb5", "#3a8f4a", "#b54a6a", "#8a7a2a", "#3a6fb5", "#8a8a8a"],
-    calc(id, def) { calcs[id] = def; },
-    data(id) {
-      if (id === "reels") return { status: "ok", data: D.rows, columns: Object.keys(D.rows[0] || {}), refreshing: false, meta: [] };
-      if (!calcs[id]) return { status: "missing", data: [], refreshing: false, meta: [] };
-      if (!(id in cache)) {
-        try { cache[id] = calcs[id].fn(...calcs[id].inputs.map((i) => api.data(i).data)); }
-        catch (e) { console.error(id, e); return { status: "error", data: [], message: String(e), meta: [] }; }
-      }
-      return { status: "ok", data: cache[id], refreshing: false, meta: [] };
-    },
-    onData(fn) { subs.push(fn); if (ready) fn(); },
-    params() { return Object.assign({}, params); },
-    setParams(p) { params = Object.assign({}, params, p); for (const k in params) if (params[k] === "all" || params[k] == null) delete params[k]; run(); },
-    resetParams() { params = {}; run(); },
-    setLink(name) { history.replaceState(null, "", "#" + name); },
-    refresh() {},
-  };
-  let ready = false, t;
-  const run = () => subs.forEach((f) => { try { f(); } catch (e) { console.error(e); } });
-  document.addEventListener("DOMContentLoaded", () => { ready = true; run(); });
-  let w = innerWidth;
-  addEventListener("resize", () => { if (innerWidth === w) return; w = innerWidth; clearTimeout(t); t = setTimeout(run, 150); });
-  return api;
-})();
-</script>
-<div id="dash-root">
-<div class="toplink"><span id="upd"></span><a href="ideas.html">Банк ідей →</a></div>
-<style>
-.rl { display: grid; gap: var(--cds-gap-lg); font-family: var(--font-anthropic-sans); }
-.rl h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance; }
-.rl .lede { color: var(--color-fg-muted); font-size: var(--cds-font-size-body); margin: var(--cds-gap-xs) 0 0; max-width: 70ch; }
-.rl .lede b { color: var(--color-fg); font-weight: 600; }
-.rl .filters { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md) var(--cds-gap-lg); align-items: end; }
-.rl .filters label { display: flex; flex-direction: column; gap: 4px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
-.rl .filters select { font: inherit; font-size: var(--cds-font-size-body); color: var(--color-fg); background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: 7px 10px; min-width: min(14rem, 100%); }
-.rl .filters select:focus-visible, .rl .filters button:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
-.rl .filters .reset { font: inherit; font-size: var(--cds-font-size-caption); background: none; border: 0; color: var(--color-fg-muted); text-decoration: underline; cursor: pointer; padding: 8px 0; }
-.rl .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); gap: var(--cds-gap-md); }
-.rl .tile, .rl .card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; }
-.rl .tile .k { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
-.rl .tile .v { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); line-height: 1.15; margin-top: var(--cds-gap-xs); font-variant-numeric: tabular-nums; }
-.rl .tile .h { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-top: var(--cds-gap-xs); }
-.rl .card h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
-.rl .card .note { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin: var(--cds-gap-xs) 0 var(--cds-gap-md); max-width: 75ch; }
-.rl .row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); gap: var(--cds-gap-md); }
-.rl .chart { position: relative; min-height: 260px; }
-.rl .chart svg { display: block; overflow: visible; }
-.rl .tip { position: absolute; z-index: 5; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); max-width: 260px; line-height: 1.4; }
-.rl .tip .d { color: var(--cds-text-secondary); }
-.rl .tip b { font-weight: 600; }
-.rl .legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: var(--cds-gap-sm); }
-.rl .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
-.rl .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: var(--cds-gap-md); min-height: 160px; }
-.rl .reel { display: grid; grid-template-columns: 76px 1fr; gap: var(--cds-gap-sm); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-sm); background: var(--color-bg); min-width: 0; }
-.rl .reel img, .rl .reel .noimg { width: 76px; height: 135px; object-fit: cover; border-radius: 6px; background: var(--color-border-line); display: block; }
-.rl .reel .x { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-title); line-height: 1; }
-.rl .reel .who { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 2px 0 6px; }
-.rl .reel .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
-.rl .reel .tag { font-size: 11.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--color-border-line); color: var(--color-fg); }
-.rl .reel .cap { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
-.rl .reel a { font-size: var(--cds-font-size-caption); }
-.rl .seg { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: var(--cds-gap-md); }
-.rl .seg button { font: inherit; font-size: var(--cds-font-size-caption); padding: 4px 10px; border-radius: 999px; border: 1px solid var(--color-border-line); background: transparent; color: var(--color-fg-muted); cursor: pointer; }
-.rl .seg button[aria-pressed="true"] { background: var(--color-fg); color: var(--color-bg); border-color: var(--color-fg); }
-.rl .seg button:focus-visible, .rl th button:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
-.rl .tech { display: grid; grid-template-columns: minmax(8rem, 13rem) 1fr auto; gap: 6px var(--cds-gap-md); align-items: center; font-size: var(--cds-font-size-caption); min-height: 200px; align-content: start; }
-.rl .tech .l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rl .tech .few { color: var(--color-fg-muted); }
-.rl .tech .track { position: relative; height: 12px; }
-.rl .tech .mid { position: absolute; left: 50%; top: -4px; bottom: -4px; width: 1px; background: var(--cds-chart-reference); }
-.rl .tech .bar { position: absolute; top: 2px; height: 8px; border-radius: 4px; }
-.rl .tech .v { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--color-fg-muted); }
-.rl .tech .v b { color: var(--color-fg); font-weight: 600; }
-.rl .tbox { max-height: 30rem; overflow: auto; }
-.rl table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
-.rl th { position: sticky; top: 0; background: var(--color-panel); text-align: left; font-weight: 400; color: var(--color-fg-muted); border-bottom: 1px solid var(--color-border-line); padding: 6px 8px; white-space: nowrap; }
-.rl th button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
-.rl td { padding: 6px 8px; border-bottom: 1px solid var(--color-border-line); vertical-align: top; }
-.rl td.n, .rl th.n { text-align: right; }
-.rl .search { font: inherit; font-size: var(--cds-font-size-caption); padding: 6px 10px; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background: var(--color-bg); color: var(--color-fg); width: min(100%, 18rem); margin-bottom: var(--cds-gap-sm); }
-.rl [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
-.rl [data-dash-source-state=empty] { color: transparent; }
-.rl .fail { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: inherit; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
-.rl .fail::before { content: ""; width: .375rem; height: .375rem; border-radius: 50%; background: var(--color-bad); }
-@media (max-width: 560px) { .rl .tech { grid-template-columns: 7rem 1fr; } .rl .tech .v { grid-column: 1 / -1; margin-top: -4px; margin-bottom: 4px; } .rl .hide-sm { display: none; } }
-.rl .pair { display: grid; grid-template-columns: minmax(9rem, 16rem) 1fr auto; gap: 4px var(--cds-gap-md); align-items: center; font-size: var(--cds-font-size-caption); min-height: 200px; align-content: start; }
-.rl .pair .l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rl .pair .bars { display: grid; gap: 3px; }
-.rl .pair .b { height: 8px; border-radius: 4px; min-width: 2px; }
-.rl .pair .v { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--color-fg-muted); text-align: right; }
-.rl .pair .v b { color: var(--color-fg); font-weight: 600; }
-.rl .pair .up { color: var(--color-fg); }
-.rl .insights { margin: 0; padding-left: 1.2em; display: grid; gap: var(--cds-gap-sm); font-size: var(--cds-font-size-body); max-width: 80ch; }
-.rl .insights b { font-weight: 600; }
-.rl .more { font: inherit; font-size: var(--cds-font-size-caption); margin-top: var(--cds-gap-md); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--color-border-line); background: transparent; color: var(--color-fg); cursor: pointer; }
-.rl .reel .ad { font-size: 11.5px; padding: 1px 7px; border-radius: 999px; background: var(--color-border-line); color: var(--color-fg-muted); }
-@media (max-width: 560px) { .rl .pair { grid-template-columns: 7.5rem 1fr; } .rl .pair .v { grid-column: 1 / -1; text-align: left; margin-bottom: 6px; } }
+<div class="shell">
+  <nav class="nav" id="nav" aria-label="Розділи">
+    <div class="brand"><span class="logo">R</span><b>Reels<br>аналітика</b></div>
+    <button class="item" data-t="ov" data-ico="ov" aria-current="page"><span class="lbl">Огляд</span></button>
+    <button class="item" data-t="tp" data-ico="tp"><span class="lbl">Теми</span></button>
+    <button class="item" data-t="ac" data-ico="ac"><span class="lbl">Акаунти</span></button>
+    <button class="item" data-t="cm" data-ico="cm"><span class="lbl">Порівняння</span></button>
+    <button class="item" data-t="wk" data-ico="wk"><span class="lbl">Що працює</span></button>
+    <div class="sep"></div>
+    <a class="item" href="ideas.html" data-ico="idea"><span class="lbl">Банк ідей</span></a>
+    <div class="spacer"></div>
+    <button class="item collapse" id="collapse" data-ico="chev" aria-label="Згорнути меню"><span class="lbl">Згорнути</span></button>
+  </nav>
+  <div class="scrim" id="scrim"></div>
 
-.rl .tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--color-border-line); }
-.rl .tabs button { font: inherit; font-size: var(--cds-font-size-body); background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 8px 12px; color: var(--color-fg-muted); cursor: pointer; }
-.rl .tabs button[aria-selected="true"] { color: var(--color-fg); border-bottom-color: var(--color-fg); }
-.rl .tabs button:focus-visible, .rl tr.pick:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
-.rl .tab { display: grid; gap: var(--cds-gap-lg); }
-.rl .tab[hidden] { display: none; }
-.rl .sub { font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); margin: var(--cds-gap-lg) 0 var(--cds-gap-sm); }
-.rl tr.pick { cursor: pointer; }
-.rl tr.pick:hover td { background: var(--color-bg); }
-.rl tr.pick.on td { background: var(--color-bg); font-weight: 600; }
-.rl tr.us td { font-weight: 600; }
-.rl .ib { display: inline-block; height: 8px; border-radius: 4px; background: var(--color-fg); margin-right: 8px; vertical-align: 0; }
-.rl .flag { margin-left: 8px; font-size: 11.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--color-border-line); color: var(--color-fg-muted); font-weight: 400; }
-</style>
+  <main class="app">
+    <header class="hdr">
+      <button class="menu-btn" id="menu" aria-label="Меню" data-ico="menu"></button>
+      <div class="tt"><h1 id="title">Огляд</h1><div class="upd" id="upd">Завантажую дані…</div></div>
+      <a class="to-ideas" href="ideas.html">Банк ідей →</a>
+    </header>
 
-<div class="rl">
-  <header>
-    <h1 id="title">Reels логопедів: що набирає понад 5 000</h1>
-    <p class="lede" id="lede">У вибраному зрізі <b data-source="summary" data-field="reels" class="dash-skeleton">—</b> рилсів, з них понад 5 000 переглядів — <b data-source="summary" data-field="over5k" class="dash-skeleton">—</b>, і серед них <b data-source="summary" data-field="promoted5k" class="dash-skeleton">—</b> схожі на рекламовані. Найбільше переглядів у вибраному зрізі — <b data-source="summary" data-field="best_views" class="dash-skeleton">—</b> у <b data-source="summary" data-field="best_account" class="dash-skeleton">—</b>.</p>
-  </header>
-
-  <div class="filters" id="filters">
-    <label for="f-account">Автор<select id="f-account"><option value="all">Усі автори</option></select></label>
-    <label for="f-period">Період<select id="f-period">
-      <option value="all">Увесь час</option><option value="365">Останній рік</option><option value="180">Останні 6 місяців</option><option value="90">Останні 90 днів</option><option value="30">Останні 30 днів</option>
-    </select></label>
-    <label for="f-topic" class="only-overview">Тема<select id="f-topic"><option value="all">Будь-яка</option></select></label>
-    <label for="f-views" class="only-overview">Перегляди<select id="f-views">
-      <option value="all">Усі рилси</option><option value="hi">Понад 5 000</option><option value="lo">До 5 000</option>
-    </select></label>
-    <button type="button" class="reset" id="f-reset" hidden>Скинути фільтри</button>
-  </div>
-
-  <div class="tabs" role="tablist" aria-label="Розділи" id="tabs">
-    <button type="button" role="tab" data-tab="overview" aria-selected="true">Огляд і хіти</button>
-    <button type="button" role="tab" data-tab="plan" aria-selected="false">Що знімати</button>
-    <button type="button" role="tab" data-tab="rhythm" aria-selected="false">Ритм і динаміка</button>
-    <button type="button" role="tab" data-tab="market" aria-selected="false">Ми проти ринку</button>
-  </div>
-  <div class="tab" id="overview">
-  <section class="tiles" id="tiles">
-    <div class="tile"><div class="k">Рилсів у зрізі</div><div class="v dash-skeleton" data-source="summary" data-field="reels">—</div><div class="h" id="total-hint">—</div></div>
-    <div class="tile"><div class="k">Понад 5 000 переглядів</div><div class="v dash-skeleton" data-source="summary" data-field="over5k">—</div><div class="h"><span data-source="summary" data-field="share5k" class="dash-skeleton">—</span> рилсів у зрізі</div></div>
-    <div class="tile"><div class="k">Схожі на рекламу серед них</div><div class="v dash-skeleton" data-source="summary" data-field="promoted5k">—</div><div class="h">лайків менше 0,4% від переглядів</div></div>
-    <div class="tile"><div class="k">Медіана переглядів</div><div class="v dash-skeleton" data-source="summary" data-field="median_views">—</div><div class="h">у типового рилса в зрізі</div></div>
-  </section>
-
-  <section class="card" id="takeaways">
-    <h2>Що видно по рилсах понад 5 000</h2>
-    <p class="note">Висновки написані 24.10.2026 по тодішній вибірці, тож цифри в них не оновлюються разом із даними. Фільтри на цей текст не діють. Тему, перший рядок і заклик я визначив за підписом до рилса, тож те, що відбувається у відео, тут не враховано.</p>
-    <ol class="insights">
-      <li><b>Найбільші цифри здебільшого куплені.</b> У 71 з 336 рилсів понад 5 000 лайків менше 0,4% від переглядів, а це типовий слід реклами. Серед звичайних рилсів таких лише 8%. Так виглядають усі 26 «вірусних» рилсів @logosfera_ua (275, 199 і 146 тис.) і 21 з 29 у @school.govorika.ukr. Копіювати їх як органічні формати не варто.</li>
-      <li><b>Третина органічних хітів належить одному автору.</b> @valeria_kovalenko_ має 114 рилсів понад 5 000, а її звичайний рилс уже набирає 5,5 тис. Тому теми «заходи для колег» (15% хітів проти 3% у звичайних) і «запуск мовлення, РАС, ЗПР» (13% проти 5%) — це передусім її ніша. Для центру з батьківською аудиторією це орієнтир лише частково.</li>
-      <li><b>Гірше заходять теми про школу і звуки.</b> «Школа: читання, письмо, увага» і «Звуки й вимова» займають 16% і 14% звичайних рилсів, але лише по 7% хітів. Ці теми знімають найчастіше, тож конкуренція в них найвища.</li>
-      <li><b>Подарунок або розсилка майже завжди виходять за 5 000.</b> 6 таких рилсів понад 5 000 проти одного нижче, найсильніший — у @oleksandra.zinchenko (32,5 тис.). Схожий ефект дають заклики «напишіть кодове слово», «посилання в шапці» і «збережіть», хоч рилсів із ними небагато.</li>
-      <li><b>Велике відео може обійтися без підпису.</b> Рилси @logoworld.kyiv на 868 тис. і @skill.kyiv на 179 тис. мають порожній підпис або самі хештеги. Їх тримає саме відео, тож ці рилси варто переглянути вручну.</li>
-      <li><b>Короткі рилси частіше стають хітами.</b> Серед рилсів до 15 секунд понад 5 000 набрали 30%, серед рилсів на 30–60 секунд лише 20%. У @logocenter_zinchenko 80 з 200 рилсів тривають саме 30–60 секунд, і медіана в них найнижча, близько 2 тис. проти 3 тис. у коротких.</li>
-      <li><b>Розбір відео хітів через Drex.</b> В органічних хітах найчастіше трапляються питання до глядача (23%), новина чи оголошення (15%) і гумор або тренд (15%). Найсильніше відриваються від звичайного рівня акаунта гумор (2,5× медіани) і дія в кадрі без слів (2,7×). У 91% хітів мова починається з першої секунди, а 45% мають плашку-заголовок.</li>
-      <li><b>@logocenter_zinchenko:</b> 26 з 200 рилсів понад 5 000, максимум 18,5 тис. Найкраще зайшли річниця з подарунками, «єЯсла», тренд «Так і живемо 🤣» і рилс про дитину, що не доводить завдання до кінця.</li>
-    </ol>
-  </section>
-
-  <section class="card" id="diff">
-    <h2>Чим рилси понад 5 000 відрізняються від решти</h2>
-    <p class="note">Частка рилсів з цією ознакою серед тих, що набрали понад 5 000, і серед решти (випадкова вибірка до 40 рилсів на акаунт). Рекламовані рилси сюди не входять. Діють фільтри «Автор» і «Період»; ознаки з менше ніж 3 рилсами понад 5 000 приглушено.</p>
-    <div class="seg" id="seg" role="group" aria-label="Ознака"></div>
-    <div class="pair dash-skeleton" id="pair" data-source="lift"></div>
-    <div class="legend" id="legend2"></div>
-  </section>
-
-  <section class="card" id="top5k">
-    <h2>Рилси понад 5 000</h2>
-    <p class="note">Від найбільшої кількості переглядів, у межах фільтрів. Позначка «реклама?» означає, що лайків менше 0,4% від переглядів.</p>
-    <div class="gallery dash-skeleton" id="gallery" data-source="reels"></div>
-    <button type="button" class="more" id="more" hidden>Показати всі</button>
-  </section>
-
-  <div class="row2">
-    <section class="card" id="spread">
-      <h2>Хто вистрілює і як сильно</h2>
-      <p class="note">Кожна точка — рилс. 1× — звичайний результат акаунта (медіана): половина його рилсів набрала більше, половина менше. Шкала логарифмічна.</p>
-      <div class="chart" id="strip" data-source="reels"></div>
-      <div class="legend" id="legend1"></div>
-    </section>
-    <section class="card" id="map">
-      <h2>Карта рилсів</h2>
-      <p class="note">Дата публікації і перегляди, шкала логарифмічна. Колір показує, наскільки рилс перевищив звичайний рівень свого акаунта. Порожні кружки — рилси, молодші за 7 днів.</p>
-      <div class="chart" id="scatter" data-source="reels"></div>
-    </section>
-  </div>
-
-  <section class="card" id="all">
-    <h2>Усі рилси</h2>
-    <p class="note">Клік по заголовку сортує, пошук іде за акаунтом, темою або підписом. Тема й заклик є лише для рилсів, підписи яких я відкривав: усіх понад 5 000 і вибірки решти.</p>
-    <input class="search" id="q" type="search" placeholder="Пошук" aria-label="Пошук по рилсах">
-    <div class="tbox"><table id="tbl" data-source="reels" data-row-key="code">
-      <thead><tr>
-        <th data-field="account"><button data-k="account">Акаунт</button></th>
-        <th data-field="date"><button data-k="date">Дата</button></th>
-        <th data-field="views" class="n"><button data-k="views">Перегляди</button></th>
-        <th data-field="x_median" class="n"><button data-k="x_median">× медіани</button></th>
-        <th data-field="like_rate" class="n hide-sm"><button data-k="like_rate">Лайки, %</button></th>
-        <th data-field="topic"><button data-k="topic">Тема</button></th>
-        <th data-field="v_hook" class="hide-sm"><button data-k="v_hook">Хук у відео</button></th>
-        <th data-field="duration_s" class="n hide-sm"><button data-k="duration_s">Секунд</button></th>
-      </tr></thead>
-      <tbody></tbody>
-    </table></div>
-  </section>
-  </div>
-
-  <div class="tab" id="plan" hidden>
-    <section class="card" id="topics-card">
-      <h2>Рейтинг тем</h2>
-      <p class="note">«Шанс хіта» — яка частка рилсів на цю тему набрала понад 5 000 переглядів без ознак реклами. Кількість рилсів оцінена: усі хіти плюс вибірка решти, перерахована на весь акаунт. Клік по рядку покаже найкращі рилси теми.</p>
-      <div class="tbox"><table id="topics" data-source="topics" data-row-key="key">
-        <thead><tr>
-          <th data-field="topic">Тема</th>
-          <th data-field="est_reels" class="n">Рилсів</th>
-          <th data-field="hits" class="n">Хітів</th>
-          <th data-field="hit_rate" class="n">Шанс хіта</th>
-          <th data-field="med_views" class="n hide-sm">Медіана переглядів</th>
-        </tr></thead>
-        <tbody></tbody>
-      </table></div>
-      <h3 class="sub" id="topic-ex-title">Найкращі рилси теми</h3>
-      <div class="gallery" id="topic-ex" data-source="reels"></div>
-    </section>
-    <div class="row2">
-      <section class="card" id="video-card">
-        <h2>Що в хітах: розбір відео</h2>
-        <p class="note">Drex Max переглянув перші кадри, розшифровку і підпис кожного рилса понад 5 000. Тут лише органічні хіти. Ліворуч — частка хітів з цією ознакою, праворуч — їхній типовий результат відносно медіани акаунта. Рилси до 5 000 не розбирались, тож це опис хітів, а не порівняння з рештою.</p>
-        <div class="seg" id="vseg" role="group" aria-label="Ознака відео"></div>
-        <div class="tech dash-skeleton" id="video" data-source="video"></div>
-      </section>
-      <section class="card" id="duration-card">
-        <h2>Тривалість</h2>
-        <p class="note">Частка рилсів понад 5 000 за тривалістю ролика, під стовпцем — медіана переглядів. Тривалість є майже для всіх рилсів, тож тут порівняння чесне.</p>
-        <div class="chart" id="duration" data-source="duration"></div>
-      </section>
+    <div class="bar" id="bar">
+      <div class="chips" id="periods" role="group" aria-label="Період"></div>
+      <div class="chips" id="filters" hidden></div>
     </div>
-    <section class="card" id="engage-card">
-      <h2>Найбільше відгуку</h2>
-      <p class="note">Рилси з найвищою часткою лайків від переглядів, від 1 000 переглядів і без ознак реклами. Тут видно, що зачіпає аудиторію, навіть якщо охоплення поки невелике. Лайки й підписи є лише для розібраних рилсів.</p>
-      <div class="gallery" id="engage" data-source="reels"></div>
-    </section>
-  </div>
 
-  <div class="tab" id="rhythm" hidden>
-    <div class="row2">
-      <section class="card" id="weekday-card">
-        <h2>День тижня</h2>
-        <p class="note">Медіана переглядів рилсів, опублікованих у цей день. Підписи над стовпцями — частка рилсів понад 5 000.</p>
-        <div class="chart" id="weekday" data-source="weekday"></div>
-      </section>
-      <section class="card" id="cadence-card">
-        <h2>Чи шкодить часта публікація</h2>
-        <p class="note">Тижні згруповано за кількістю рилсів. Стовпець — типовий результат рилса в такий тиждень відносно звичайного рівня акаунта (1× — як зазвичай).</p>
-        <div class="chart" id="cadence" data-source="cadence"></div>
-      </section>
-    </div>
-    <section class="card" id="monthly-card">
-      <h2>Динаміка по місяцях</h2>
-      <p class="note">Медіана переглядів рилсів за місяць публікації, шкала логарифмічна. Виділено @logocenter_zinchenko і автора з фільтра, решта сірим. Місяці з одним рилсом пропущено.</p>
-      <div class="chart" id="monthly" data-source="monthly"></div>
-      <div class="legend" id="legend3"></div>
+    <section data-p="ov">
+      <div class="hero" id="hero"></div>
+      <div class="card"><h2>Головне</h2><ul class="takes" id="takes"></ul></div>
+      <div class="card"><h2>Хіти конкурентів</h2><p class="note" id="hits-note">Найбільше переглядів за період. Тап — розбір і «В ідеї».</p><div class="strip" id="strip"></div></div>
+      <div class="card">
+        <h2>Усі рилси</h2>
+        <div class="search" id="searchbox"><input type="search" id="q" placeholder="Акаунт, тема або слово з підпису" aria-label="Пошук по рилсах"></div>
+        <div class="chips" id="sorts"></div>
+        <div class="list" id="all"></div>
+        <button class="more" id="more" hidden>Показати ще</button>
+      </div>
     </section>
-  </div>
 
-  <div class="tab" id="market" hidden>
-    <section class="card" id="mkt-card">
-      <h2>Акаунти поруч</h2>
-      <p class="note">Діє лише фільтр «Період». «Рилсів на тиждень» рахується від першого зібраного рилса акаунта, тож у старших періодах воно точне лише для тих, у кого зібрано всю історію. Лайки й коментарі — медіана розібраних рилсів, перерахована на весь акаунт.</p>
-      <div class="tbox"><table id="mkt" data-source="market" data-row-key="key">
-        <thead><tr>
-          <th data-field="account">Акаунт</th>
-          <th data-field="per_week" class="n">Рилсів на тиждень</th>
-          <th data-field="med_views" class="n">Медіана переглядів</th>
-          <th data-field="share5k" class="n">Понад 5 000</th>
-          <th data-field="organic_hits" class="n hide-sm">Органічних хітів</th>
-          <th data-field="like_rate" class="n hide-sm">Лайки, %</th>
-          <th data-field="comments_k" class="n hide-sm">Коментарів на 1 000</th>
-          <th data-field="best_topic" class="hide-sm">Найсильніша тема</th>
-        </tr></thead>
-        <tbody></tbody>
-      </table></div>
+    <section data-p="tp" hidden>
+      <div class="card"><h2>Сфери</h2><p class="note">Органічні хіти конкурентів за сферою. Тап — показати лише цю сферу.</p><div class="rows" id="spheres"></div></div>
+      <div class="card"><h2>Теми: шанс хіта</h2><p class="note">Яка частка рилсів конкурентів на тему стала органічним хітом. Тап по темі фільтрує весь дашборд.</p><div class="rows" id="topics"></div></div>
     </section>
-    <section class="card" id="gaps-card">
-      <h2>Теми, де ринок вистрілює, а ви знімаєте мало</h2>
-      <p class="note">Для кожної теми: шанс органічного хіта в конкурентів (без @logocenter_zinchenko) і частка цієї теми серед ваших рилсів поруч із часткою в конкурентів. Діє фільтр «Період».</p>
-      <div class="tbox"><table id="gaps" data-source="gaps" data-row-key="key">
-        <thead><tr>
-          <th data-field="topic">Тема</th>
-          <th data-field="market_rate" class="n">Шанс хіта в ринку</th>
-          <th data-field="market_share" class="n">Частка в ринку</th>
-          <th data-field="our_share" class="n">Частка у вас</th>
-          <th data-field="our_hits" class="n hide-sm">Ваших хітів</th>
-        </tr></thead>
-        <tbody></tbody>
-      </table></div>
+
+    <section data-p="ac" hidden>
+      <p class="pagenote">Тап по акаунту — найкращі рилси, теми і порівняння з вами.</p>
+      <div class="accs" id="accs"></div>
     </section>
-  </div>
+
+    <section data-p="cm" hidden>
+      <div class="card">
+        <div class="pick">
+          <label><span><i class="dot" id="dot-a"></i>Перший акаунт</span><select id="ca"></select></label>
+          <label><span><i class="dot" id="dot-b"></i>Другий акаунт</span><select id="cb"></select></label>
+        </div>
+      </div>
+      <div class="card"><h2>Цифри</h2><div class="cmp" id="cmp"></div></div>
+      <div class="card"><h2>Медіана переглядів по місяцях</h2><p class="note">Останні 12 місяців, шкала логарифмічна. Наведіть або торкніться графіка.</p><div class="chart" id="cline"></div></div>
+      <div class="card"><h2>Про що знімають</h2><p class="note">Частка рилсів на тему.</p><div class="cmp" id="ctopics"></div></div>
+    </section>
+
+    <section data-p="wk" hidden>
+      <p class="pagenote">Розбір відео органічних хітів конкурентів (Drex): що в них трапляється найчастіше і наскільки вони перевищили звичайний рівень свого акаунта. Тап — приклади.</p>
+      <div class="card"><div class="chips" id="wseg"></div><div class="rows" id="wrows" style="margin-top:12px"></div></div>
+      <div class="card"><h2>Тривалість</h2><p class="note">Шанс органічного хіта за довжиною ролика.</p><div class="rows" id="dur"></div></div>
+      <div class="card"><h2>День публікації</h2><p class="note">Шанс органічного хіта за днем тижня.</p><div class="rows" id="wday"></div></div>
+    </section>
+  </main>
 </div>
 
-<script>
-window.RL = (() => {
-  const OUT = 3, ZIN = "logocenter_zinchenko";
-  const num = (v) => (v === "" || v == null ? null : Number(v));
-  const nf = new Intl.NumberFormat("uk-UA");
-  const fx = (x) => x == null ? "—" : (x >= 10 ? Math.round(x) + "×" : x.toFixed(1).replace(".", ",") + "×");
-  const fk = (v) => v >= 1e4 ? Intl.NumberFormat("uk-UA", { notation: "compact", maximumFractionDigits: 1 }).format(v) : nf.format(v);
-  const fp = (v) => (Math.round(v * 10) / 10).toString().replace(".", ",") + "%";
-  const inPeriod = (r, period, last) => period === "all" || last - Date.parse(r.date) <= Number(period) * 86400000;
-  return { OUT, ZIN, num, nf, fx, fk, fp, inPeriod };
-})();
-</script>
+<div class="shade" id="shade"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Подробиці"><div class="grab"></div><button class="x" id="sheet-x" aria-label="Закрити" data-ico="close"></button><div id="sheetbody"></div></div>
+
 <script>
 (() => {
-  const RL = window.RL;
-  RL.redraws = [];
-  let cur = "overview";
-  RL.tab = () => cur;
-  const tabs = document.getElementById("tabs");
-  const show = (id) => {
-    if (!document.getElementById(id) || !document.getElementById(id).classList.contains("tab")) return;
-    cur = id;
-    document.querySelectorAll(".rl .tab").forEach((t) => { t.hidden = t.id !== id; });
-    tabs.querySelectorAll("button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === id)));
-    document.querySelectorAll(".rl .only-overview").forEach((n) => { n.hidden = id !== "overview"; });
-    RL.redraws.forEach((f) => f());
+  const NS = "http://www.w3.org/2000/svg";
+  const ICON = {
+    ov: '<path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z"/>',
+    tp: '<path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/>',
+    ac: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.6.8 2.7 2.6 3 5.2"/>',
+    cm: '<path d="M5 20V10M10 20V4M15 20v-7M20 20V8"/>',
+    wk: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+    idea: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2v.2h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    close: '<path d="M6 6l12 12M18 6 6 18"/>',
+    chev: '<path d="m15 6-6 6 6 6"/>',
+    target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".6"/>',
+    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    pin: '<path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+    ext: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+    search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
   };
-  RL.show = show;
-  tabs.addEventListener("click", (ev) => { const b = ev.target.closest("button[data-tab]"); if (b) { show(b.dataset.tab); dash.setLink(b.dataset.tab); } });
-  const named = location.hash.slice(1);
-  if (named) setTimeout(() => show(named), 0);
-})();
-</script>
-
-
-<script>
-dash.calc("summary", {
-  inputs: ["reels"],
-  title: "Підсумок за фільтрами",
-  description: "Для кожного поєднання автора, періоду, теми й порогу переглядів: скільки рилсів, скільки понад 5 000 і яка їхня частка, скільки з них схожі на рекламовані (лайків менше 0,4% від переглядів), найбільші перегляди і медіана. Період рахується від найсвіжішої дати у вибірці.",
-  fn: (reels) => {
-    const n = (v) => (v === "" || v == null ? null : Number(v));
-    const med = (a) => { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : null; };
-    const last = Math.max(...reels.map((r) => Date.parse(r.date)));
-    const accounts = ["all", ...new Set(reels.map((r) => r.account))];
-    const topics = ["all", ...new Set(reels.map((r) => r.topic).filter(Boolean))];
-    const out = [];
-    for (const account of accounts) for (const period of ["all", "365", "180", "90", "30"]) {
-      const base = reels.filter((r) => (account === "all" || r.account === account) && (period === "all" || last - Date.parse(r.date) <= Number(period) * 86400000));
-      for (const topic of topics) for (const views of ["all", "hi", "lo"]) {
-        const rs = base.filter((r) => (topic === "all" || r.topic === topic) && (views === "all" || (views === "hi") === (r.over_5k === "так")));
-        const hi = rs.filter((r) => r.over_5k === "так");
-        const best = rs.slice().sort((p, q) => n(q.views) - n(p.views))[0];
-        out.push({ key: [account, period, topic, views].join("|"), account, period, topic, views, reels: rs.length, over5k: hi.length,
-          share5k: rs.length ? Math.round(1000 * hi.length / rs.length) / 10 : null,
-          promoted5k: hi.filter((r) => r.promoted === "так").length,
-          best_views: best ? n(best.views) : null, best_account: best ? best.account : null,
-          median_views: med(rs.map((r) => n(r.views))) });
-      }
-    }
-    return out;
-  },
-});
-
-dash.calc("lift", {
-  inputs: ["reels"],
-  title: "Ознаки рилсів понад 5 000 і решти",
-  description: "Для кожного поєднання автора й періоду та кожної ознаки (тема, перший рядок підпису, заклик): частка рилсів з цією ознакою серед органічних рилсів понад 5 000 і серед органічних рилсів до 5 000 з розібраним підписом. Рекламовані (лайків менше 0,4% від переглядів) виключено.",
-  fn: (reels) => {
-    const last = Math.max(...reels.map((r) => Date.parse(r.date)));
-    const accounts = ["all", ...new Set(reels.map((r) => r.account))];
-    const cols = [["topic", "Тема"], ["hook", "Перший рядок"], ["cta", "Заклик"]];
-    const out = [];
-    for (const account of accounts) for (const period of ["all", "365", "180", "90", "30"]) {
-      const rs = reels.filter((r) => r.detail === "так" && r.promoted === "ні" && (account === "all" || r.account === account) &&
-        (period === "all" || last - Date.parse(r.date) <= Number(period) * 86400000));
-      const hi = rs.filter((r) => r.over_5k === "так"), lo = rs.filter((r) => r.over_5k !== "так");
-      for (const [col, group] of cols) {
-        const vals = new Set(rs.map((r) => r[col]).filter(Boolean));
-        for (const value of vals) {
-          const h = hi.filter((r) => r[col] === value).length, l = lo.filter((r) => r[col] === value).length;
-          out.push({ key: [account, period, col, value].join("|"), account, period, group, column: col, value,
-            hi_n: h, lo_n: l, hi_total: hi.length, lo_total: lo.length,
-            hi_share: hi.length ? Math.round(1000 * h / hi.length) / 10 : 0, lo_share: lo.length ? Math.round(1000 * l / lo.length) / 10 : 0 });
-        }
-      }
-    }
-    return out;
-  },
-});
-</script>
-<script>
-dash.calc("topics", {
-  inputs: ["reels"],
-  title: "Рейтинг тем",
-  description: "Для кожного автора й періоду та кожної теми: оцінка кількості рилсів (рилси до 5 000 з розібраним підписом зважені на частку вибірки в акаунті), органічні рилси понад 5 000, їхня частка («шанс хіта») і зважена медіана переглядів.",
-  fn: (reels) => {
-    const med_ = (a) => { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : null; }; const sum_ = (a, f) => a.reduce((t, x) => t + f(x), 0); 
-    const last = Math.max(...reels.map((r) => Date.parse(r.date)));
-    const wmed = (pairs) => { const s = pairs.slice().sort((a, b) => a[0] - b[0]), tot = sum_(s, (p) => p[1]); let c = 0; for (const [v, w] of s) { c += w; if (c >= tot / 2) return v; } return null; };
-    const out = [];
-    for (const account of ["all", ...new Set(reels.map((r) => r.account))]) for (const period of ["all", "365", "180", "90", "30"]) {
-      const rs = reels.filter((r) => (account === "all" || r.account === account) && (period === "all" || last - Date.parse(r.date) <= Number(period) * 86400000));
-      const w = {};
-      for (const a of new Set(rs.map((r) => r.account))) {
-        const lo = rs.filter((r) => r.account === a && r.over_5k !== "так");
-        const det = lo.filter((r) => r.detail === "так").length;
-        w[a] = det ? lo.length / det : 0;
-      }
-      const by = new Map(); for (const r of rs) if (r.detail === "так" && r.topic) { if (!by.has(r.topic)) by.set(r.topic, []); by.get(r.topic).push(r); }
-      for (const [topic, list] of by) {
-        const pairs = list.map((r) => [Number(r.views), r.over_5k === "так" ? 1 : w[r.account]]);
-        const est = sum_(pairs, (p) => p[1]);
-        const hits = list.filter((r) => r.over_5k === "так" && r.promoted === "ні").length;
-        out.push({ key: [account, period, topic].join("|"), account, period, topic, est_reels: Math.round(est), hits,
-          hit_rate: est ? Math.round(1000 * hits / est) / 10 : 0, med_views: Math.round(wmed(pairs)) });
-      }
-    }
-    return out;
-  },
-});
-
-dash.calc("weekday", {
-  inputs: ["reels"],
-  title: "Перегляди за днем тижня",
-  description: "Для кожного автора й періоду та дня тижня публікації: кількість рилсів, медіана переглядів і частка рилсів понад 5 000.",
-  fn: (reels) => {
-    const med_ = (a) => { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : null; }; const sum_ = (a, f) => a.reduce((t, x) => t + f(x), 0); 
-    const last = Math.max(...reels.map((r) => Date.parse(r.date)));
-    const out = [];
-    for (const account of ["all", ...new Set(reels.map((r) => r.account))]) for (const period of ["all", "365", "180", "90", "30"]) {
-      const rs = reels.filter((r) => (account === "all" || r.account === account) && (period === "all" || last - Date.parse(r.date) <= Number(period) * 86400000));
-      for (let wd = 1; wd <= 7; wd++) {
-        const list = rs.filter((r) => ((new Date(r.date + "T00:00:00Z").getUTCDay() + 6) % 7) + 1 === wd);
-        out.push({ key: [account, period, wd].join("|"), account, period, weekday: wd, reels: list.length,
-          med_views: med_(list.map((r) => Number(r.views))),
-          share5k: list.length ? Math.round(1000 * list.filter((r) => r.over_5k === "так").length / list.length) / 10 : null });
-      }
-    }
-    return out;
-  },
-});
-
-dash.calc("cadence", {
-  inputs: ["reels"],
-  title: "Частота публікацій і результат",
-  description: "Тижні (з понеділка) кожного акаунта згруповано за кількістю рилсів: 1, 2, 3, 4, 5 і більше. Для групи — кількість тижнів і медіана «× медіани акаунта» рилсів цих тижнів. Лише рилси старші за 7 днів.",
-  fn: (reels) => {
-    const med_ = (a) => { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : null; }; const sum_ = (a, f) => a.reduce((t, x) => t + f(x), 0); 
-    const last = Math.max(...reels.map((r) => Date.parse(r.date)));
-    const out = [];
-    for (const account of ["all", ...new Set(reels.map((r) => r.account))]) for (const period of ["all", "365", "180", "90", "30"]) {
-      const rs = reels.filter((r) => r.x_median !== "" && (account === "all" || r.account === account) && (period === "all" || last - Date.parse(r.date) <= Number(period) * 86400000));
-      const wk = new Map(); for (const r of rs) { const t = Date.parse(r.date + "T00:00:00Z"), d = (new Date(t).getUTCDay() + 6) % 7, k = r.account + "|" + (t - d * 86400000); if (!wk.has(k)) wk.set(k, []); wk.get(k).push(r); } const weeks = [...wk];
-      for (const b of [1, 2, 3, 4, 5]) {
-        const ws = weeks.filter(([, l]) => Math.min(l.length, 5) === b);
-        const xs = ws.flatMap(([, l]) => l.map((r) => Number(r.x_median)));
-        out.push({ key: [account, period, b].join("|"), account, period, per_week: b, weeks: ws.length, reels: xs.length,
-          median_x: xs.length ? Math.round(100 * med_(xs)) / 100 : null });
-      }
-    }
-    return out;
-  },
-});
-
-dash.calc("monthly", {
-  inputs: ["reels"],
-  title: "Перегляди по місяцях",
-  description: "Для кожного акаунта й місяця публікації: кількість рилсів і медіана переглядів.",
-  fn: (reels) => {
-    const med_ = (a) => { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
-    const g = new Map();
-    for (const r of reels) { const k = r.account + "|" + r.date.slice(0, 7); if (!g.has(k)) g.set(k, []); g.get(k).push(Number(r.views)); }
-    return [...g].map(([key, v]) => ({ key, account: key.split("|")[0], month: key.split("|")[1], reels: v.length, med_views: med_(v) }));
-  },
-});
-
-dash.calc("market", {
-  inputs: ["reels"],
-  title: "Акаунти поруч",
-  description: "Для кожного періоду й акаунта: рилсів на тиждень (від першого зібраного рилса або початку періоду), медіана переглядів, частка понад 5 000, органічні хіти, зважена медіана лайків у % від переглядів і коментарів на 1 000 переглядів, тема з найбільшою кількістю органічних хітів.",
-  fn: (reels) => {
-    const med_ = (a) => { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : null; }; const sum_ = (a, f) => a.reduce((t, x) => t + f(x), 0); 
-    const last = Math.max(...reels.map((r) => Date.parse(r.date)));
-    const wmed = (pairs) => { const s = pairs.slice().sort((a, b) => a[0] - b[0]), tot = sum_(s, (p) => p[1]); let c = 0; for (const [v, w] of s) { c += w; if (c >= tot / 2) return v; } return null; };
-    const out = [];
-    for (const period of ["all", "365", "180", "90", "30"]) for (const account of new Set(reels.map((r) => r.account))) {
-      const all = reels.filter((r) => r.account === account);
-      const first = Math.min(...all.map((r) => Date.parse(r.date)));
-      const start = period === "all" ? first : Math.max(first, last - Number(period) * 86400000);
-      const rs = all.filter((r) => Date.parse(r.date) >= start);
-      if (!rs.length) continue;
-      const lo = rs.filter((r) => r.over_5k !== "так"), det = lo.filter((r) => r.detail === "так").length, w = det ? lo.length / det : 0;
-      const dr = rs.filter((r) => r.detail === "так" && r.likes !== "");
-      const wt = (r) => (r.over_5k === "так" ? 1 : w);
-      const hits = rs.filter((r) => r.over_5k === "так" && r.promoted === "ні");
-      const cnt = {}; for (const r of hits) if (r.topic && r.topic !== "Без підпису" && r.topic !== "Інше") cnt[r.topic] = (cnt[r.topic] || 0) + 1; const top = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0];
-      out.push({ key: period + "|" + account, period, account, reels: rs.length,
-        per_week: Math.round(10 * rs.length / Math.max(1, (last - start) / 604800000)) / 10,
-        med_views: med_(rs.map((r) => Number(r.views))),
-        share5k: Math.round(1000 * rs.filter((r) => r.over_5k === "так").length / rs.length) / 10,
-        organic_hits: hits.length,
-        like_rate: dr.length ? wmed(dr.map((r) => [Number(r.like_rate), wt(r)])) : null,
-        comments_k: dr.length ? Math.round(10 * wmed(dr.map((r) => [1000 * Number(r.comments) / Number(r.views), wt(r)]))) / 10 : null,
-        best_topic: top ? top[0] : null });
-    }
-    return out;
-  },
-});
-
-dash.calc("duration", {
-  inputs: ["reels"],
-  title: "Тривалість і результат",
-  description: "Для кожного автора й періоду та групи тривалості (до 15 с, 15–30, 30–60, 60–90, понад 90): кількість рилсів, частка понад 5 000 і медіана переглядів.",
-  fn: (reels) => {
-    const med_ = (a) => { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : null; };
-    const last = Math.max(...reels.map((r) => Date.parse(r.date)));
-    const B = [[0, 15, "до 15 с"], [15, 30, "15–30 с"], [30, 60, "30–60 с"], [60, 90, "60–90 с"], [90, 1e9, "понад 90 с"]];
-    const out = [];
-    for (const account of ["all", ...new Set(reels.map((r) => r.account))]) for (const period of ["all", "365", "180", "90", "30"]) {
-      const rs = reels.filter((r) => r.duration_s !== "" && (account === "all" || r.account === account) && (period === "all" || last - Date.parse(r.date) <= Number(period) * 86400000));
-      B.forEach(([lo, hi, label], i) => {
-        const l = rs.filter((r) => Number(r.duration_s) >= lo && Number(r.duration_s) < hi);
-        out.push({ key: [account, period, i].join("|"), account, period, bucket: label, order: i, reels: l.length,
-          share5k: l.length ? Math.round(1000 * l.filter((r) => r.over_5k === "так").length / l.length) / 10 : null,
-          med_views: med_(l.map((r) => Number(r.views))) });
-      });
-    }
-    return out;
-  },
-});
-
-dash.calc("video", {
-  inputs: ["reels"],
-  title: "Ознаки відео в органічних хітах",
-  description: "Для кожного автора й періоду та кожної ознаки, яку визначив Drex Max (хук, сила хука, перший кадр, плашка, субтитри, задача, початок мови, заклик у відео): скільки органічних рилсів понад 5 000 її мають, їхня частка і медіана «× медіани акаунта».",
-  fn: (reels) => {
-    const med_ = (a) => { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : null; };
-    const last = Math.max(...reels.map((r) => Date.parse(r.date)));
-    const cols = [["v_hook", "Хук"], ["v_strength", "Сила хука"], ["v_frame", "Перший кадр"], ["v_overlay", "Плашка"], ["v_subs", "Субтитри"], ["v_goal", "Задача"], ["v_speech", "Початок мови"], ["v_cta", "Заклик у відео"]];
-    const out = [];
-    for (const account of ["all", ...new Set(reels.map((r) => r.account))]) for (const period of ["all", "365", "180", "90", "30"]) {
-      const rs = reels.filter((r) => r.v_hook && r.over_5k === "так" && r.promoted === "ні" && (account === "all" || r.account === account) && (period === "all" || last - Date.parse(r.date) <= Number(period) * 86400000));
-      for (const [col, group] of cols) {
-        const by = {};
-        for (const r of rs) if (r[col]) (by[r[col]] = by[r[col]] || []).push(r);
-        for (const [value, l] of Object.entries(by)) {
-          const xs = l.map((r) => r.x_median).filter((v) => v !== "").map(Number);
-          out.push({ key: [account, period, col, value].join("|"), account, period, group, column: col, value, hits: l.length,
-            share: Math.round(1000 * l.length / rs.length) / 10, median_x: xs.length ? Math.round(100 * med_(xs)) / 100 : null });
-        }
-      }
-    }
-    return out;
-  },
-});
-
-dash.calc("gaps", {
-  inputs: ["reels"],
-  title: "Теми: ринок проти @logocenter_zinchenko",
-  description: "Для кожного періоду й теми: шанс органічного хіта в конкурентів, частка теми серед рилсів конкурентів і серед рилсів @logocenter_zinchenko (рилси до 5 000 зважені на частку вибірки), органічні хіти @logocenter_zinchenko.",
-  fn: (reels) => {
-    const med_ = (a) => { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : null; }; const sum_ = (a, f) => a.reduce((t, x) => t + f(x), 0); 
-    const ZIN = "logocenter_zinchenko";
-    const last = Math.max(...reels.map((r) => Date.parse(r.date)));
-    const out = [];
-    for (const period of ["all", "365", "180", "90", "30"]) {
-      const rs = reels.filter((r) => period === "all" || last - Date.parse(r.date) <= Number(period) * 86400000);
-      const w = {};
-      for (const a of new Set(rs.map((r) => r.account))) {
-        const lo = rs.filter((r) => r.account === a && r.over_5k !== "так"), det = lo.filter((r) => r.detail === "так").length;
-        w[a] = det ? lo.length / det : 0;
-      }
-      const det = rs.filter((r) => r.detail === "так" && r.topic);
-      const wt = (r) => (r.over_5k === "так" ? 1 : w[r.account]);
-      const mk = det.filter((r) => r.account !== ZIN), us = det.filter((r) => r.account === ZIN);
-      const mkTot = sum_(mk, wt), usTot = sum_(us, wt);
-      for (const topic of new Set(det.map((r) => r.topic))) {
-        const m = mk.filter((r) => r.topic === topic), u = us.filter((r) => r.topic === topic), mw = sum_(m, wt);
-        out.push({ key: period + "|" + topic, period, topic,
-          market_rate: mw ? Math.round(1000 * m.filter((r) => r.over_5k === "так" && r.promoted === "ні").length / mw) / 10 : 0,
-          market_share: mkTot ? Math.round(1000 * mw / mkTot) / 10 : 0,
-          our_share: usTot ? Math.round(1000 * sum_(u, wt) / usTot) / 10 : 0,
-          our_hits: u.filter((r) => r.over_5k === "так" && r.promoted === "ні").length });
-      }
-    }
-    return out;
-  },
-});
-</script>
-
-
-
-<script>
-(() => {
-  const { OUT, ZIN, num, nf, fx, fk, fp, inPeriod } = window.RL;
+  const ico = (k) => { const s = document.createElementNS(NS, "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("class", "ico"); s.setAttribute("aria-hidden", "true"); s.innerHTML = ICON[k]; return s; };
   const $ = (id) => document.getElementById(id);
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-  const colorFor = (x) => x == null ? null : x > 1 ? dash.colors[0] : "var(--cds-chart-muted)";
-  const opFor = (x) => x == null ? 1 : x >= OUT ? 1 : x > 1 ? 0.45 : 1;
-  let group = "Тема", sortK = "views", sortDir = -1, rowsCache = [], showAll = false;
-  const P = () => { const p = dash.params(); return { account: p.account || "all", period: p.period || "all", topic: p.topic || "all", views: p.views || "all" }; };
-  const combo = () => { const p = P(); return [p.account, p.period, p.topic, p.views].join("|"); };
-  function slice(rows) {
-    const p = P(), last = Math.max(...rows.map((r) => Date.parse(r.date)));
-    return rows.filter((r) => (p.account === "all" || r.account === p.account) && (p.topic === "all" || r.topic === p.topic) &&
-      (p.views === "all" || (p.views === "hi") === (r.over_5k === "так")) && inPeriod(r, p.period, last));
-  }
-  const fA = $("f-account"), fP = $("f-period"), fT = $("f-topic"), fV = $("f-views"), fR = $("f-reset");
-  fA.addEventListener("change", () => dash.setParams({ account: fA.value }));
-  fP.addEventListener("change", () => dash.setParams({ period: fP.value }));
-  fT.addEventListener("change", () => dash.setParams({ topic: fT.value }));
-  fV.addEventListener("change", () => dash.setParams({ views: fV.value }));
-  fR.addEventListener("click", () => dash.resetParams());
-  $("more").addEventListener("click", () => { showAll = !showAll; drawGallery(rowsCache); });
+  const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const tg = window.TG && TG.tg;
 
-  function fail(box, st) {
-    box.replaceChildren(); box.classList.remove("dash-skeleton");
-    if (st === "error" || st === "connect" || st === "declined") box.append(el("div", "fail", "Не вдалося завантажити"));
-    else if (st === "loading") box.classList.add("dash-skeleton");
-  }
-  function tip(box) {
-    let t = box.querySelector(".tip");
-    if (!t) { t = el("div", "tip"); t.hidden = true; box.append(t); }
-    return {
-      show(ev, lines) {
-        t.replaceChildren(...lines.map(([cls, text]) => { const d = el("div", cls === "b" ? null : cls); if (cls === "b") d.append(el("b", null, text)); else d.textContent = text; return d; }));
-        t.hidden = false;
-        const b = box.getBoundingClientRect(), w = t.offsetWidth, h = t.offsetHeight;
-        let x = ev.clientX - b.left + 12, y = ev.clientY - b.top + 12;
-        if (x + w > b.width) x = ev.clientX - b.left - w - 12;
-        if (y + h > b.height) y = Math.max(0, ev.clientY - b.top - h - 12);
-        t.style.left = Math.max(0, x) + "px"; t.style.top = y + "px";
-      },
-      hide() { t.hidden = true; },
-    };
-  }
-  const dmy = (d) => d.split("-").reverse().join(".");
-  const lines = (r) => [["d", "@" + r.account + " · " + dmy(r.date)], ["b", nf.format(num(r.views)) + " переглядів"],
-    ["", num(r.x_median) != null ? fx(num(r.x_median)) + " від медіани акаунта" : "молодший за 7 днів"], ["d", r.topic ? "Тема: " + r.topic : "Підпис не розібрано"], ...(r.v_hook ? [["d", "Хук у відео: " + r.v_hook]] : [])];
+  // ---------- навігація: бокове меню, згортання, кнопка на телефоні ----------
+  document.querySelectorAll("[data-ico]").forEach((n) => n.prepend(ico(n.dataset.ico)));
+  $("searchbox").prepend(ico("search"));
+  try { if (localStorage.getItem("navMini") === "1") document.body.classList.add("mini"); } catch (e) {}
+  $("collapse").onclick = () => { const m = document.body.classList.toggle("mini"); try { localStorage.setItem("navMini", m ? "1" : "0"); } catch (e) {} };
+  const back = () => { if (!tg || !tg.BackButton) return; (document.body.classList.contains("drawer") || document.body.classList.contains("sheet-open")) ? tg.BackButton.show() : tg.BackButton.hide(); };
+  const drawer = (on) => { document.body.classList.toggle("drawer", on); back(); };
+  $("menu").onclick = () => drawer(true);
+  $("scrim").onclick = () => drawer(false);
+  document.querySelectorAll(".item[data-t]").forEach((b) => b.setAttribute("title", b.textContent.trim()));
+  const bar = $("bar");
+  addEventListener("scroll", () => bar.classList.toggle("stuck", bar.getBoundingClientRect().top <= 0 && scrollY > 40), { passive: true });
 
-  function drawGallery(rows) {
-    const box = $("gallery"); box.replaceChildren(); box.classList.remove("dash-skeleton");
-    const top = rows.filter((r) => r.over_5k === "так").sort((a, b) => num(b.views) - num(a.views));
-    const more = $("more");
-    if (!top.length) { box.append(el("div", "note", "У цьому зрізі немає рилсів понад 5 000 переглядів.")); more.hidden = true; return; }
-    const LIM = 24;
-    more.hidden = top.length <= LIM; more.textContent = showAll ? "Згорнути" : "Показати всі " + top.length;
-    for (const r of showAll ? top : top.slice(0, LIM)) {
-      const card = el("article", "reel"), info = el("div");
-      if (r.thumb && r.thumb.startsWith("data:image/")) { const img = el("img"); img.src = r.thumb; img.alt = "Обкладинка рилса @" + r.account; img.loading = "lazy"; card.append(img); }
-      else card.append(el("div", "noimg"));
-      info.append(el("div", "x", fk(num(r.views))), el("div", "who", "@" + r.account + " · " + dmy(r.date) + (num(r.x_median) != null ? " · " + fx(num(r.x_median)) + " медіани" : "")));
-      const tags = el("div", "tags");
-      if (r.promoted === "так") tags.append(el("span", "ad", "реклама?"));
-      for (const t of [r.v_hook, r.topic, r.cta]) if (t) tags.append(el("span", "tag", t));
-      info.append(tags, el("div", "cap", r.caption || "Без підпису"));
-      const a = el("a", null, "Відкрити рилс ↗"); a.href = r.url; a.target = "_blank"; a.rel = "noopener"; info.append(a);
-      card.append(info); box.append(card);
-    }
+  // ---------- заготовки до завантаження ----------
+  const sk = (w, h, r) => { const d = el("div", "sk"); d.style.width = w; d.style.height = h + "px"; if (r) d.style.borderRadius = r; return d; };
+  const skLines = (box, n) => { box.replaceChildren(...Array.from({ length: n }, (_, i) => { const r = el("div"); r.style.padding = "8px 0"; const a = sk(30 + (i * 17) % 45 + "%", 12); const b = sk("100%", 8); b.style.marginTop = "10px"; r.append(a, b); return r; })); };
+  function skeletonAll() {
+    $("hero").replaceChildren(...[0, 1, 2].map(() => { const c = el("div", "card"); c.append(sk("60%", 12), sk("70%", 26), sk("80%", 10)); c.children[1].style.marginTop = "12px"; c.children[2].style.marginTop = "10px"; return c; }));
+    $("takes").replaceChildren(...[0, 1, 2, 3].map((i) => { const li = el("li"); li.append(sk("32px", 32, "10px")); const t = el("div"); t.append(sk("95%", 12), sk(55 + i * 9 + "%", 12)); t.children[1].style.marginTop = "8px"; li.append(t); return li; }));
+    $("strip").replaceChildren(...[0, 1, 2, 3, 4].map(() => { const t = el("div", "tile"); t.append(sk("132px", 208, "12px"), sk("80%", 10)); t.children[1].style.marginTop = "8px"; return t; }));
+    $("all").replaceChildren(...[0, 1, 2, 3, 4, 5].map(() => { const r = el("div", "it"); const m = el("div"); m.append(sk("70%", 12), sk("45%", 10)); m.children[1].style.marginTop = "8px"; r.append(sk("44px", 68), m, sk("56px", 14)); return r; }));
+    for (const id of ["spheres", "topics", "wrows", "dur", "wday", "cmp", "ctopics"]) skLines($(id), 5);
+    $("accs").replaceChildren(...[0, 1, 2, 3].map(() => { const c = el("div", "acc"); c.style.animation = "none"; const b = el("div"); b.append(sk("60%", 14), sk("80%", 10), sk("100%", 30)); b.children[1].style.marginTop = "8px"; b.children[2].style.marginTop = "12px"; c.append(sk("44px", 44, "50%"), b); return c; }));
+    $("cline").replaceChildren(sk("100%", 180, "12px"));
+    $("sorts").replaceChildren(...[0, 1, 2].map(() => sk("84px", 36, "999px")));
+    $("periods").replaceChildren(...[0, 1, 2, 3].map(() => sk("76px", 36, "999px")));
   }
+  skeletonAll();
 
-  function drawPair(st, rows) {
-    const box = $("pair");
-    if (st !== "ok") { fail(box, st); return; }
-    box.replaceChildren(); box.classList.remove("dash-skeleton");
-    const seg = $("seg");
-    if (!seg.childElementCount) for (const g of ["Тема", "Перший рядок", "Заклик"]) {
-      const b = el("button", null, g); b.type = "button"; b.setAttribute("aria-pressed", String(g === group));
-      b.addEventListener("click", () => { group = g; seg.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.textContent === g))); const d = dash.data("lift"); drawPair(d.status, d.data); });
-      seg.append(b);
-    }
-    const p = P(), pre = p.account + "|" + p.period + "|";
-    const list = rows.filter((r) => r.group === group && r.key.startsWith(pre))
-      .sort((a, b) => (b.hi_n >= 3) - (a.hi_n >= 3) || (b.hi_share - b.lo_share) - (a.hi_share - a.lo_share));
-    const lg = $("legend2"); lg.replaceChildren();
-    if (!list.length || !list[0].hi_total) { box.append(el("div", "note", "У цьому зрізі немає органічних рилсів понад 5 000 з розібраним підписом.")); return; }
-    const max = Math.max(...list.map((r) => Math.max(r.hi_share, r.lo_share)), 1);
-    for (const r of list) {
-      const few = r.hi_n < 3, w = (v) => (100 * v / max) + "%";
-      const l = el("div", "l" + (few ? " few" : ""), r.value); l.title = r.value; if (few) l.style.color = "var(--color-fg-muted)";
-      const bars = el("div", "bars");
-      const bh = el("div", "b"); bh.style.width = w(r.hi_share); bh.style.background = few ? "var(--cds-chart-muted)" : dash.colors[0];
-      const bl = el("div", "b"); bl.style.width = w(r.lo_share); bl.style.background = "var(--cds-chart-muted)"; bl.style.opacity = 0.55;
-      for (const [b, f] of [[bh, "hi_share"], [bl, "lo_share"]]) { b.setAttribute("data-source", "lift"); b.setAttribute("data-field", f); b.setAttribute("data-where", "key=" + encodeURIComponent(r.key)); }
-      bars.append(bh, bl);
-      const v = el("div", "v");
-      const bx = el("b", null, fp(r.hi_share)); bx.setAttribute("data-source", "lift"); bx.setAttribute("data-field", "hi_share"); bx.setAttribute("data-where", "key=" + encodeURIComponent(r.key));
-      v.append(bx, document.createTextNode(" проти " + fp(r.lo_share) + " · " + r.hi_n + " рил."));
-      box.append(l, bars, v);
-    }
-    const r0 = list[0];
-    for (const [c, o, t] of [[dash.colors[0], 1, "понад 5 000 (" + r0.hi_total + " органічних)"], ["var(--cds-chart-muted)", 0.55, "до 5 000 (" + r0.lo_total + " у вибірці)"]]) {
-      const s = el("span"); const i = el("i"); i.style.background = c; i.style.opacity = o; i.style.borderRadius = "3px"; s.append(i, document.createTextNode(t)); lg.append(s);
-    }
-  }
-
-  function drawStrip(rows) {
-    const box = $("strip"); fail(box, "ok"); box.replaceChildren();
-    const data = rows.filter((r) => num(r.x_median) > 0);
-    $("legend1").replaceChildren();
-    if (!data.length) { box.append(el("div", "note", "У цьому зрізі немає рилсів старших за 7 днів.")); return; }
-    const accs = [...new Set(data.map((r) => r.account))].sort((a, b) => d3.max(data.filter((r) => r.account === b), (r) => num(r.x_median)) - d3.max(data.filter((r) => r.account === a), (r) => num(r.x_median)));
-    const W = box.clientWidth || 600, rowH = 36, H = 30 + rowH * accs.length + 28;
-    const svg = d3.select(box).append("svg").attr("width", "100%").attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img").attr("aria-label", "Результат рилсів відносно медіани акаунта");
-    const measure = svg.append("text").attr("font-size", 12).text("@" + (accs.reduce((a, b) => (a.length > b.length ? a : b), "")));
-    const left = Math.min(170, measure.node().getComputedTextLength() + 16); measure.remove();
-    const xs = data.map((r) => num(r.x_median));
-    const x = d3.scaleLog([Math.min(0.1, d3.min(xs) / 1.3), Math.max(12, d3.max(xs) * 1.3)], [left, W - 34]);
-    const y = (i) => 24 + i * rowH + rowH / 2;
-    const ticks = [0.1, 0.3, 1, 3, 10, 30, 100, 300].filter((t) => t >= x.domain()[0] && t <= x.domain()[1]);
-    const g = svg.append("g");
-    g.selectAll("line").data(ticks).join("line").attr("x1", x).attr("x2", x).attr("y1", 18).attr("y2", H - 24)
-      .attr("stroke", (t) => t === 1 ? "var(--cds-chart-reference)" : "var(--cds-chart-grid)").attr("stroke-dasharray", (t) => t === 1 ? "4 3" : null);
-    g.selectAll("text").data(ticks).join("text").attr("x", x).attr("y", H - 8).attr("text-anchor", "middle").attr("font-size", 12)
-      .attr("fill", "var(--color-fg-muted)").text((t) => String(t).replace(".", ",") + "×");
-    svg.append("text").attr("x", x(1) + 4).attr("y", 12).attr("font-size", 12).attr("fill", "var(--color-fg-muted)").text("1× = медіана акаунта");
-    svg.append("g").selectAll("text").data(accs).join("text").attr("x", left - 10).attr("y", (d, i) => y(i)).attr("dy", "0.35em").attr("text-anchor", "end")
-      .attr("font-size", 12).attr("font-weight", (d) => d === ZIN ? 600 : 400).attr("fill", "var(--color-fg)").text((d) => "@" + d);
-    const hash = (s) => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return ((h >>> 0) % 1000) / 1000 - 0.5; };
-    const T = tip(box);
-    svg.append("g").selectAll("circle").data(data.sort((a, b) => num(a.x_median) - num(b.x_median))).join("circle")
-      .attr("cx", (r) => x(num(r.x_median))).attr("cy", (r) => y(accs.indexOf(r.account)) + hash(r.code) * 18).attr("r", 4)
-      .attr("fill", (r) => colorFor(num(r.x_median))).attr("fill-opacity", (r) => opFor(num(r.x_median)))
-      .attr("stroke", "var(--color-panel)").attr("stroke-width", 1).style("cursor", "pointer")
-      .on("pointermove", (ev, r) => T.show(ev, lines(r))).on("pointerleave", () => T.hide())
-      .on("click", (ev, r) => window.open(r.url, "_blank", "noopener"));
-    const best = d3.rollups(data, (v) => d3.max(v, (r) => num(r.x_median)), (r) => r.account);
-    svg.append("g").selectAll("text").data(best).join("text").attr("x", ([a, b]) => x(b) + 7).attr("y", ([a]) => y(accs.indexOf(a))).attr("dy", "0.35em")
-      .attr("font-size", 11.5).attr("fill", "var(--color-fg-muted)").text(([a, b]) => b >= OUT ? fx(b) : "");
-    box.style.minHeight = H + "px";
-    const lg = $("legend1");
-    for (const [c, o, t] of [[dash.colors[0], 1, "від 3× — виліт"], [dash.colors[0], 0.45, "вище медіани"], ["var(--cds-chart-muted)", 1, "нижче медіани"]]) {
-      const s = el("span"); const i = el("i"); i.style.background = c; i.style.opacity = o; s.append(i, document.createTextNode(t)); lg.append(s);
-    }
-  }
-
-  function drawScatter(rows) {
-    const box = $("scatter"); fail(box, "ok"); box.replaceChildren();
-    if (!rows.some((r) => num(r.views) > 0)) { box.append(el("div", "note", "У цьому зрізі немає рилсів.")); return; }
-    const data = rows.filter((r) => num(r.views) > 0).map((r) => ({ r, d: new Date(r.date + "T00:00:00Z"), v: num(r.views), x: num(r.x_median) }));
-    const W = box.clientWidth || 700, H = 320, m = { l: 56, r: 14, t: 10, b: 28 };
-    const svg = d3.select(box).append("svg").attr("width", "100%").attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img").attr("aria-label", "Перегляди рилсів за датою");
-    const x = d3.scaleUtc(d3.extent(data, (p) => p.d), [m.l, W - m.r]).nice();
-    const y = d3.scaleLog([d3.min(data, (p) => p.v) / 1.4, d3.max(data, (p) => p.v) * 1.3], [H - m.b, m.t]);
-    const yt = [100, 1000, 5000, 10000, 100000, 1000000].filter((t) => t >= y.domain()[0] && t <= y.domain()[1]);
-    svg.append("g").selectAll("line").data(yt).join("line").attr("x1", m.l).attr("x2", W - m.r).attr("y1", y).attr("y2", y)
-      .attr("stroke", (t) => t === 5000 ? "var(--cds-chart-reference)" : "var(--cds-chart-grid)").attr("stroke-dasharray", (t) => t === 5000 ? "4 3" : null);
-    svg.append("g").selectAll("text").data(yt).join("text").attr("x", m.l - 8).attr("y", y).attr("dy", "0.35em").attr("text-anchor", "end").attr("font-size", 12).attr("fill", "var(--color-fg-muted)").text((t) => fk(t));
-    const span = x.domain()[1] - x.domain()[0];
-    const ax = svg.append("g").attr("transform", `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor(W / 110))).tickFormat(d3.utcFormat(span > 400 * 86400000 ? "%m.%Y" : "%d.%m")).tickSizeOuter(0));
-    ax.attr("font-size", null).attr("font-family", null); ax.selectAll("text").attr("font-size", 12).attr("fill", "var(--color-fg-muted)"); ax.selectAll("line,path").attr("stroke", "var(--cds-chart-axis)");
-    const T = tip(box);
-    svg.append("g").selectAll("circle").data(data.sort((a, b) => (a.x ?? 0) - (b.x ?? 0))).join("circle").attr("cx", (p) => x(p.d)).attr("cy", (p) => y(p.v)).attr("r", 4)
-      .attr("fill", (p) => p.x == null ? "none" : colorFor(p.x)).attr("fill-opacity", (p) => opFor(p.x))
-      .attr("stroke", (p) => p.x == null ? "var(--color-fg-muted)" : "var(--color-panel)").attr("stroke-width", 1).style("cursor", "pointer")
-      .on("pointermove", (ev, p) => T.show(ev, lines(p.r))).on("pointerleave", () => T.hide())
-      .on("click", (ev, p) => window.open(p.r.url, "_blank", "noopener"));
-    box.style.minHeight = H + "px";
-  }
-
-  function drawTable(rows) {
-    const body = $("tbl").querySelector("tbody"), q = $("q").value.trim().toLowerCase();
-    const NUM = ["views", "x_median", "like_rate", "duration_s"];
-    const list = rows.filter((r) => !q || [r.account, r.topic, r.caption].join(" ").toLowerCase().includes(q))
-      .sort((a, b) => {
-        const va = NUM.includes(sortK) ? (num(a[sortK]) ?? -1) : String(a[sortK] || ""), vb = NUM.includes(sortK) ? (num(b[sortK]) ?? -1) : String(b[sortK] || "");
-        return (typeof va === "number" ? va - vb : va.localeCompare(vb, "uk")) * sortDir;
-      });
-    body.replaceChildren(...list.map((r) => {
-      const tr_ = document.createElement("tr"); tr_.dataset.key = r.code;
-      const a = el("a", null, "@" + r.account); a.href = r.url; a.target = "_blank"; a.rel = "noopener";
-      const c0 = el("td"); c0.append(a);
-      tr_.append(c0, el("td", null, dmy(r.date)), el("td", "n", nf.format(num(r.views))),
-        el("td", "n", num(r.x_median) != null ? fx(num(r.x_median)) : "молодий"),
-        el("td", "n hide-sm", num(r.like_rate) != null ? String(r.like_rate).replace(".", ",") : "—"),
-        el("td", null, r.topic || "—"), el("td", "hide-sm", r.v_hook || "—"), el("td", "n hide-sm", num(r.duration_s) != null ? String(Math.round(num(r.duration_s))) : "—"));
-      return tr_;
-    }));
-    $("tbl").querySelectorAll("th button").forEach((b) => b.parentElement.setAttribute("aria-sort", b.dataset.k === sortK ? (sortDir < 0 ? "descending" : "ascending") : "none"));
-  }
-  $("q").addEventListener("input", () => drawTable(rowsCache));
-  $("tbl").querySelectorAll("th button").forEach((b) => b.addEventListener("click", () => {
-    sortDir = sortK === b.dataset.k ? -sortDir : (["views", "x_median", "date", "like_rate"].includes(b.dataset.k) ? -1 : 1); sortK = b.dataset.k; drawTable(rowsCache);
-  }));
-
-  function drawOverview() {
-    const p = P();
-    fP.value = p.period; fV.value = p.views;
-    fR.hidden = p.account === "all" && p.period === "all" && p.topic === "all" && p.views === "all";
-    const s = dash.data("summary");
-    const row = s.status === "ok" ? s.data.find((r) => r.key === combo()) : null;
-    document.querySelectorAll('[data-source="summary"]').forEach((n) => {
-      n.setAttribute("data-where", "key=" + encodeURIComponent(combo()));
-      if (!row) { n.textContent = "—"; n.classList.toggle("dash-skeleton", s.status === "loading"); return; }
-      n.classList.remove("dash-skeleton");
-      const f = n.dataset.field, v = row[f];
-      n.textContent = v == null ? "—" : f === "best_account" ? "@" + v : f === "share5k" ? fp(v) : f === "best_views" ? fk(v) : nf.format(Math.round(v));
+  function loadData() {
+    return new Promise((res, rej) => {
+      if (window.REELS_DATA) return res();
+      const s = document.createElement("script");
+      s.src = "data.js?v=" + Math.floor(Date.now() / 36e5);
+      s.onload = () => (window.REELS_DATA ? res() : rej(Object.assign(new Error("empty"), { data: true })));
+      s.onerror = () => rej(Object.assign(new Error("load"), { data: true }));
+      document.head.append(s);
     });
-    const d = dash.data("reels");
-    if (d.status !== "ok") { ["gallery", "strip", "scatter"].forEach((id) => fail($(id), d.status)); $("tbl").querySelector("tbody").replaceChildren(); }
-    else {
-      if (fA.options.length === 1) for (const a of [...new Set(d.data.map((r) => r.account))].sort()) fA.append(new Option("@" + a, a));
-      if (fT.options.length === 1) for (const t of [...new Set(d.data.map((r) => r.topic).filter(Boolean))].sort((a, b) => a.localeCompare(b, "uk"))) fT.append(new Option(t, t));
-      fA.value = p.account; fT.value = p.topic;
-      rowsCache = slice(d.data); if (window.RL.tab() === "overview") { drawGallery(rowsCache); drawStrip(rowsCache); drawScatter(rowsCache); } drawTable(rowsCache);
-    }
-    const l = dash.data("lift"); if (window.RL.tab() === "overview") drawPair(l.status, l.data);
   }
-  window.RL.redraws.push(drawOverview);
-  dash.onData(drawOverview);
-})();
-</script>
+  function loadError() {
+    $("upd").textContent = "Дані не завантажились";
+    const box = document.querySelector("section[data-p='ov']");
+    const c = el("div", "card");
+    c.append(emptyBox("Не вдалося завантажити дані", "Перевірте інтернет і спробуйте ще раз. Якщо не допомагає, на GitHub у репозиторії reels має бути файл data.js (без «(1)» у назві).", [["Спробувати ще раз", () => location.reload()]]));
+    box.replaceChildren(c);
+    $("periods").replaceChildren();
+  }
+  Promise.all([loadData(), TG.gate({ quiet: true })]).then(init).catch((e) => { if (e && e.data) loadError(); });
 
-
-<script>
-(() => {
-  const { num, nf, fx, fk, fp, inPeriod, ZIN } = window.RL;
-  const $ = (id) => document.getElementById(id);
-  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-  const P = () => { const p = dash.params(); return { account: p.account || "all", period: p.period || "all" }; };
-  const dmy = (d) => d.split("-").reverse().join(".");
-  const WD = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
-  let pickedTopic = null;
-  const fail = (box, st) => { box.replaceChildren(); box.classList.remove("dash-skeleton"); if (st === "error" || st === "connect" || st === "declined") box.append(el("div", "fail", "Не вдалося завантажити")); else if (st === "loading") box.classList.add("dash-skeleton"); return st !== "ok"; };
-  function tip(box) {
-    let t = box.querySelector(".tip");
-    if (!t) { t = el("div", "tip"); t.hidden = true; box.append(t); }
-    return {
-      show(ev, lines) {
-        t.replaceChildren(...lines.map(([cls, text]) => { const d = el("div", cls === "b" ? null : cls); if (cls === "b") d.append(el("b", null, text)); else d.textContent = text; return d; }));
-        t.hidden = false;
-        const b = box.getBoundingClientRect(), w = t.offsetWidth, h = t.offsetHeight;
-        let x = ev.clientX - b.left + 12, y = ev.clientY - b.top + 12;
-        if (x + w > b.width) x = ev.clientX - b.left - w - 12;
-        if (y + h > b.height) y = Math.max(0, ev.clientY - b.top - h - 12);
-        t.style.left = Math.max(0, x) + "px"; t.style.top = y + "px";
-      },
-      hide() { t.hidden = true; },
-    };
-  }
-  function reelCard(r, big) {
-    const card = el("article", "reel"), info = el("div");
-    if (r.thumb && r.thumb.startsWith("data:image/")) { const img = el("img"); img.src = r.thumb; img.alt = "Обкладинка рилса @" + r.account; img.loading = "lazy"; card.append(img); }
-    else card.append(el("div", "noimg"));
-    info.append(el("div", "x", big), el("div", "who", "@" + r.account + " · " + dmy(r.date) + " · " + fk(num(r.views)) + " переглядів"));
-    const tags = el("div", "tags"); for (const t of [r.v_hook, r.topic, r.cta]) if (t) tags.append(el("span", "tag", t));
-    info.append(tags, el("div", "cap", r.caption || "Без підпису"));
-    const a = el("a", null, "Відкрити рилс ↗"); a.href = r.url; a.target = "_blank"; a.rel = "noopener"; info.append(a);
-    card.append(info); return card;
-  }
-  function rowsIn(d) {
-    const p = P(), last = Math.max(...d.map((r) => Date.parse(r.date)));
-    return d.filter((r) => (p.account === "all" || r.account === p.account) && inPeriod(r, p.period, last));
+  // ---------- порожній стан з порадою, що робити ----------
+  function emptyBox(title, text, actions) {
+    const b = el("div", "empty"); b.append(el("b", null, title)); if (text) b.append(el("p", null, text));
+    if (actions && actions.length) { const r = el("div", "btns"); for (const [l, f] of actions) { const x = el("button", "btn sm", l); x.onclick = f; r.append(x); } b.append(r); }
+    return b;
   }
 
-  // ---- Що знімати
-  function drawTopics() {
-    const t = dash.data("topics"), body = $("topics").querySelector("tbody"), p = P();
-    if (t.status !== "ok") { body.replaceChildren(); return; }
-    const pre = p.account + "|" + p.period + "|";
-    const list = t.data.filter((r) => r.key.startsWith(pre)).sort((a, b) => b.hit_rate - a.hit_rate || b.hits - a.hits);
-    if (pickedTopic && !list.some((r) => r.topic === pickedTopic)) pickedTopic = null;
-    if (!pickedTopic && list.length) pickedTopic = list[0].topic;
-    const max = Math.max(1, ...list.map((r) => r.hit_rate));
-    body.replaceChildren(...list.map((r) => {
-      const tr = document.createElement("tr"); tr.dataset.key = r.key; tr.className = "pick" + (r.topic === pickedTopic ? " on" : "");
-      tr.tabIndex = 0;
-      const rate = el("td", "n"); const bar = el("span", "ib"); bar.style.width = (60 * r.hit_rate / max) + "px"; if (r.hits < 3) bar.style.background = "var(--cds-chart-muted)";
-      rate.append(bar, document.createTextNode(fp(r.hit_rate)));
-      tr.append(el("td", null, r.topic), el("td", "n", nf.format(r.est_reels)), el("td", "n", nf.format(r.hits)), rate, el("td", "n hide-sm", fk(r.med_views)));
-      return tr;
-    }));
-    drawTopicEx();
-  }
-  $("topics").addEventListener("click", (ev) => { const tr = ev.target.closest("tr[data-key]"); if (tr) { pickedTopic = tr.dataset.key.split("|").slice(2).join("|"); drawTopics(); } });
-  $("topics").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { const tr = ev.target.closest("tr[data-key]"); if (tr) { pickedTopic = tr.dataset.key.split("|").slice(2).join("|"); drawTopics(); } } });
-  function drawTopicEx() {
-    const d = dash.data("reels"), box = $("topic-ex");
-    if (fail(box, d.status)) return;
-    $("topic-ex-title").textContent = pickedTopic ? "Найкращі рилси теми «" + pickedTopic + "»" : "Найкращі рилси теми";
-    const list = rowsIn(d.data).filter((r) => r.topic === pickedTopic && r.promoted !== "так").sort((a, b) => num(b.views) - num(a.views)).slice(0, 6);
-    if (!list.length) { box.append(el("div", "note", "У цьому зрізі немає рилсів на цю тему.")); return; }
-    for (const r of list) box.append(reelCard(r, fk(num(r.views))));
-  }
-  let vgroup = "Хук";
-  function drawVideo() {
-    const box = $("video"), v = dash.data("video");
-    if (fail(box, v.status)) return;
-    const seg = $("vseg");
-    if (!seg.childElementCount) for (const g of ["Хук", "Сила хука", "Перший кадр", "Плашка", "Субтитри", "Задача", "Початок мови", "Заклик у відео"]) {
-      const b = el("button", null, g); b.type = "button"; b.setAttribute("aria-pressed", String(g === vgroup));
-      b.addEventListener("click", () => { vgroup = g; seg.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.textContent === g))); drawVideo(); });
-      seg.append(b);
-    }
-    const p = P(), pre = p.account + "|" + p.period + "|";
-    const list = v.data.filter((r) => r.group === vgroup && r.key.startsWith(pre)).sort((a, b) => b.hits - a.hits);
-    if (!list.length) { box.append(el("div", "few", "У цьому зрізі немає органічних хітів з розбором відео.")); return; }
-    const max = Math.max(...list.map((r) => r.share));
-    for (const r of list) {
-      const few = r.hits < 5;
-      const l = el("div", "l" + (few ? " few" : ""), r.value); l.title = r.value;
-      const track = el("div", "track");
-      const bar = el("div", "bar"); bar.style.left = "0"; bar.style.width = Math.max(1, 100 * r.share / max) + "%"; bar.style.background = few ? "var(--cds-chart-muted)" : dash.colors[0];
-      bar.setAttribute("data-source", "video"); bar.setAttribute("data-field", "share"); bar.setAttribute("data-where", "key=" + encodeURIComponent(r.key));
-      track.append(bar);
-      const val = el("div", "v"); const b = el("b", null, fp(r.share)); b.setAttribute("data-source", "video"); b.setAttribute("data-field", "share"); b.setAttribute("data-where", "key=" + encodeURIComponent(r.key));
-      val.append(b, document.createTextNode(" · " + r.hits + " рил. · " + (r.median_x != null ? fx(r.median_x) : "—")));
-      box.append(l, track, val);
-    }
-  }
-  function drawDuration() {
-    const box = $("duration"), du = dash.data("duration");
-    if (fail(box, du.status)) return;
-    const p = P(), pre = p.account + "|" + p.period + "|";
-    const data = du.data.filter((r) => r.key.startsWith(pre) && r.reels > 0).sort((a, b) => a.order - b.order);
-    if (!data.length) { box.append(el("div", "note", "У цьому зрізі немає рилсів з відомою тривалістю.")); return; }
-    const W = box.clientWidth || 400, H = 250, m = { l: 40, r: 8, t: 22, b: 44 };
-    const svg = d3.select(box).append("svg").attr("width", "100%").attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img").attr("aria-label", "Частка рилсів понад 5 000 за тривалістю");
-    const x = d3.scaleBand(data.map((r) => r.bucket), [m.l, W - m.r]).padding(0.3);
-    const y = d3.scaleLinear([0, Math.max(10, d3.max(data, (r) => r.share5k) * 1.15)], [H - m.b, m.t]).nice();
-    const yt = y.ticks(4);
-    svg.append("g").selectAll("line").data(yt).join("line").attr("x1", m.l).attr("x2", W - m.r).attr("y1", y).attr("y2", y).attr("stroke", "var(--cds-chart-grid)");
-    svg.append("g").selectAll("text").data(yt).join("text").attr("x", m.l - 8).attr("y", y).attr("dy", "0.35em").attr("text-anchor", "end").attr("font-size", 12).attr("fill", "var(--color-fg-muted)").text((t) => t + "%");
-    const best = d3.greatest(data.filter((r) => r.reels >= 10), (r) => r.share5k);
-    const T = tip(box);
-    svg.append("g").selectAll("rect").data(data).join("rect").attr("x", (r) => x(r.bucket) + Math.max(0, (x.bandwidth() - 32) / 2)).attr("width", Math.min(32, x.bandwidth()))
-      .attr("y", (r) => y(r.share5k)).attr("height", (r) => y(0) - y(r.share5k)).attr("rx", 4).attr("fill", (r) => r === best ? dash.colors[0] : "var(--cds-chart-muted)")
-      .on("pointermove", (ev, r) => T.show(ev, [["d", r.bucket], ["b", fp(r.share5k) + " понад 5 000"], ["", r.reels + " рилсів · медіана " + nf.format(Math.round(r.med_views))]])).on("pointerleave", () => T.hide());
-    svg.append("g").selectAll("text").data(data).join("text").attr("x", (r) => x(r.bucket) + x.bandwidth() / 2).attr("y", (r) => y(r.share5k) - 6).attr("text-anchor", "middle").attr("font-size", 11.5).attr("fill", "var(--color-fg-muted)").text((r) => fp(r.share5k));
-    svg.append("g").selectAll("text").data(data).join("text").attr("x", (r) => x(r.bucket) + x.bandwidth() / 2).attr("y", H - m.b + 16).attr("text-anchor", "middle").attr("font-size", 12).attr("fill", "var(--color-fg)").text((r) => r.bucket);
-    svg.append("g").selectAll("text").data(data).join("text").attr("x", (r) => x(r.bucket) + x.bandwidth() / 2).attr("y", H - m.b + 31).attr("text-anchor", "middle").attr("font-size", 11).attr("fill", "var(--color-fg-muted)").text((r) => "мед. " + fk(r.med_views));
-    box.style.minHeight = H + "px";
-  }
-  function drawEngage() {
-    const d = dash.data("reels"), box = $("engage");
-    if (fail(box, d.status)) return;
-    const list = rowsIn(d.data).filter((r) => r.promoted === "ні" && num(r.views) >= 1000 && num(r.like_rate) != null).sort((a, b) => num(b.like_rate) - num(a.like_rate)).slice(0, 9);
-    if (!list.length) { box.append(el("div", "note", "У цьому зрізі немає розібраних рилсів від 1 000 переглядів.")); return; }
-    for (const r of list) {
-      const c = reelCard(r, String(r.like_rate).replace(".", ",") + "% лайків");
-      c.querySelector(".who").textContent += " · " + nf.format(num(r.comments)) + " коментарів";
-      box.append(c);
-    }
-  }
+  function init() {
+    const D = window.REELS_DATA;
+    const ZIN = "logocenter_zinchenko", OUR_X = 3, OUT = 3, AD = 0.4, DAY = 864e5;
+    const n = (v) => (v === "" || v == null ? null : Number(v));
+    const nf = new Intl.NumberFormat("uk-UA");
+    const fk = (v) => v == null || !isFinite(v) ? "—" : v >= 1e4 ? new Intl.NumberFormat("uk-UA", { notation: "compact", maximumFractionDigits: 1 }).format(v) : nf.format(Math.round(v));
+    const fp = (v) => v == null || !isFinite(v) ? "—" : (Math.round(v * 10) / 10).toString().replace(".", ",") + "%";
+    const fx = (x) => x == null ? "—" : x >= 10 ? Math.round(x) + "×" : (Math.round(x * 10) / 10).toString().replace(".", ",") + "×";
+    const f1 = (v) => v == null ? "—" : (Math.round(v * 10) / 10).toString().replace(".", ",");
+    const dmy = (d) => d ? d.split("-").reverse().join(".") : "—";
+    const med = (a) => { const s = a.filter((x) => x != null).sort((p, q) => p - q), m = s.length >> 1; return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : null; };
+    const cnt = (a, f) => a.reduce((s, r) => s + (f(r) ? 1 : 0), 0);
+    const open = (url) => { if (tg && tg.openLink) tg.openLink(url); else window.open(url, "_blank", "noopener"); };
+    const MN = ["січ", "лют", "бер", "кві", "тра", "чер", "лип", "сер", "вер", "жов", "лис", "гру"];
 
-  // ---- Ритм і динаміка
-  function drawWeekday() {
-    const box = $("weekday"), w = dash.data("weekday");
-    if (fail(box, w.status)) return;
-    const p = P(), pre = p.account + "|" + p.period + "|";
-    const data = w.data.filter((r) => r.key.startsWith(pre)).sort((a, b) => a.weekday - b.weekday);
-    if (!data.some((r) => r.reels)) { box.append(el("div", "note", "У цьому зрізі немає рилсів.")); return; }
-    const W = box.clientWidth || 400, H = 240, m = { l: 48, r: 8, t: 22, b: 40 };
-    const svg = d3.select(box).append("svg").attr("width", "100%").attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img").attr("aria-label", "Медіана переглядів за днем тижня");
-    const x = d3.scaleBand(data.map((r) => r.weekday), [m.l, W - m.r]).padding(0.3);
-    const y = d3.scaleLinear([0, d3.max(data, (r) => r.med_views || 0) * 1.1], [H - m.b, m.t]).nice();
-    const yt = y.ticks(4);
-    svg.append("g").selectAll("line").data(yt).join("line").attr("x1", m.l).attr("x2", W - m.r).attr("y1", y).attr("y2", y).attr("stroke", "var(--cds-chart-grid)");
-    svg.append("g").selectAll("text").data(yt).join("text").attr("x", m.l - 8).attr("y", y).attr("dy", "0.35em").attr("text-anchor", "end").attr("font-size", 12).attr("fill", "var(--color-fg-muted)").text((t) => fk(t));
-    const best = d3.greatest(data.filter((r) => r.reels >= 5), (r) => r.med_views);
-    const T = tip(box);
-    svg.append("g").selectAll("rect").data(data.filter((r) => r.reels)).join("rect").attr("x", (r) => x(r.weekday) + Math.max(0, (x.bandwidth() - 32) / 2)).attr("width", Math.min(32, x.bandwidth()))
-      .attr("y", (r) => y(r.med_views)).attr("height", (r) => y(0) - y(r.med_views)).attr("rx", 4)
-      .attr("fill", (r) => r === best ? dash.colors[0] : "var(--cds-chart-muted)")
-      .on("pointermove", (ev, r) => T.show(ev, [["d", WD[r.weekday - 1]], ["b", "Медіана " + nf.format(Math.round(r.med_views))], ["", r.reels + " рилсів · " + fp(r.share5k) + " понад 5 000"]])).on("pointerleave", () => T.hide());
-    svg.append("g").selectAll("text").data(data.filter((r) => r.reels)).join("text").attr("x", (r) => x(r.weekday) + x.bandwidth() / 2).attr("y", (r) => y(r.med_views) - 6).attr("text-anchor", "middle").attr("font-size", 11.5).attr("fill", "var(--color-fg-muted)").text((r) => fp(r.share5k));
-    svg.append("g").selectAll("text").data(data).join("text").attr("x", (r) => x(r.weekday) + x.bandwidth() / 2).attr("y", H - m.b + 16).attr("text-anchor", "middle").attr("font-size", 12).attr("fill", "var(--color-fg)").text((r) => WD[r.weekday - 1]);
-    svg.append("g").selectAll("text").data(data).join("text").attr("x", (r) => x(r.weekday) + x.bandwidth() / 2).attr("y", H - m.b + 31).attr("text-anchor", "middle").attr("font-size", 11).attr("fill", "var(--color-fg-muted)").text((r) => r.reels + " рил.");
-    box.style.minHeight = H + "px";
-  }
-  function drawCadence() {
-    const box = $("cadence"), c = dash.data("cadence");
-    if (fail(box, c.status)) return;
-    const p = P(), pre = p.account + "|" + p.period + "|";
-    const data = c.data.filter((r) => r.key.startsWith(pre) && r.weeks > 0).sort((a, b) => a.per_week - b.per_week);
-    if (!data.length) { box.append(el("div", "note", "У цьому зрізі немає рилсів старших за 7 днів.")); return; }
-    const W = box.clientWidth || 400, H = 240, m = { l: 44, r: 8, t: 22, b: 40 };
-    const svg = d3.select(box).append("svg").attr("width", "100%").attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img").attr("aria-label", "Результат рилсів залежно від кількості публікацій на тиждень");
-    const x = d3.scaleBand(data.map((r) => r.per_week), [m.l, W - m.r]).padding(0.3);
-    const y = d3.scaleLinear([0, Math.max(1.5, d3.max(data, (r) => r.median_x) * 1.15)], [H - m.b, m.t]).nice();
-    const yt = y.ticks(4);
-    svg.append("g").selectAll("line").data(yt).join("line").attr("x1", m.l).attr("x2", W - m.r).attr("y1", y).attr("y2", y)
-      .attr("stroke", (t) => t === 1 ? "var(--cds-chart-reference)" : "var(--cds-chart-grid)").attr("stroke-dasharray", (t) => t === 1 ? "4 3" : null);
-    svg.append("g").selectAll("text").data(yt).join("text").attr("x", m.l - 8).attr("y", y).attr("dy", "0.35em").attr("text-anchor", "end").attr("font-size", 12).attr("fill", "var(--color-fg-muted)").text((t) => fx(t));
-    const T = tip(box);
-    svg.append("g").selectAll("rect").data(data).join("rect").attr("x", (r) => x(r.per_week) + Math.max(0, (x.bandwidth() - 32) / 2)).attr("width", Math.min(32, x.bandwidth()))
-      .attr("y", (r) => y(r.median_x)).attr("height", (r) => y(0) - y(r.median_x)).attr("rx", 4)
-      .attr("fill", (r) => r.weeks < 5 ? "var(--cds-chart-muted)" : r.median_x >= 1 ? dash.colors[0] : "var(--cds-chart-muted)")
-      .on("pointermove", (ev, r) => T.show(ev, [["d", (r.per_week === 5 ? "5 і більше" : r.per_week) + " рилс. на тиждень"], ["b", fx(r.median_x) + " медіани акаунта"], ["", r.weeks + " тижнів · " + r.reels + " рилсів"]])).on("pointerleave", () => T.hide());
-    svg.append("g").selectAll("text").data(data).join("text").attr("x", (r) => x(r.per_week) + x.bandwidth() / 2).attr("y", (r) => y(r.median_x) - 6).attr("text-anchor", "middle").attr("font-size", 11.5).attr("fill", "var(--color-fg-muted)").text((r) => fx(r.median_x));
-    svg.append("g").selectAll("text").data(data).join("text").attr("x", (r) => x(r.per_week) + x.bandwidth() / 2).attr("y", H - m.b + 16).attr("text-anchor", "middle").attr("font-size", 12).attr("fill", "var(--color-fg)").text((r) => r.per_week === 5 ? "5+" : r.per_week);
-    svg.append("g").selectAll("text").data(data).join("text").attr("x", (r) => x(r.per_week) + x.bandwidth() / 2).attr("y", H - m.b + 31).attr("text-anchor", "middle").attr("font-size", 11).attr("fill", "var(--color-fg-muted)").text((r) => r.weeks + " тиж.");
-    box.style.minHeight = H + "px";
-  }
-  function drawMonthly() {
-    const box = $("monthly"), mo = dash.data("monthly"), lg = $("legend3");
-    lg.replaceChildren();
-    if (fail(box, mo.status)) return;
-    const p = P();
-    const lastM = d3.max(mo.data, (r) => r.month);
-    const lastD = new Date(lastM + "-01T00:00:00Z");
-    const span = p.period === "all" || p.period === "365" ? 23 : Math.max(2, Math.ceil(Number(p.period) / 30));
-    const from = d3.utcMonth.offset(lastD, -span);
-    const pts = mo.data.filter((r) => r.reels >= 2).map((r) => ({ ...r, d: new Date(r.month + "-01T00:00:00Z") })).filter((r) => r.d >= from);
-    if (!pts.length) { box.append(el("div", "note", "У цьому зрізі замало рилсів по місяцях.")); return; }
-    const focus = [ZIN, ...(p.account !== "all" && p.account !== ZIN ? [p.account] : [])];
-    const series = d3.groups(pts, (r) => r.account).sort((a, b) => focus.indexOf(a[0]) - focus.indexOf(b[0]));
-    const W = box.clientWidth || 700, H = 300;
-    const svg = d3.select(box).append("svg").attr("width", "100%").attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img").attr("aria-label", "Медіана переглядів по місяцях");
-    const y = d3.scaleLog([Math.max(50, d3.min(pts, (r) => r.med_views) / 1.3), d3.max(pts, (r) => r.med_views) * 1.3], [H - 28, 10]);
-    const yt = [100, 300, 1000, 3000, 10000, 30000, 100000].filter((t) => t >= y.domain()[0] && t <= y.domain()[1]);
-    const mlab = svg.append("text").attr("font-size", 12).text(fk(d3.max(yt) || 1000)); const l = mlab.node().getComputedTextLength() + 14; mlab.remove();
-    const endLab = svg.append("text").attr("font-size", 12).text("@" + focus.reduce((a, b) => (a.length > b.length ? a : b))); const r_ = Math.min(170, endLab.node().getComputedTextLength() + 14); endLab.remove();
-    const x = d3.scaleUtc([from, lastD], [l, W - r_]);
-    svg.append("g").selectAll("line").data(yt).join("line").attr("x1", l).attr("x2", W - r_).attr("y1", y).attr("y2", y).attr("stroke", "var(--cds-chart-grid)");
-    svg.append("g").selectAll("text").data(yt).join("text").attr("x", l - 8).attr("y", y).attr("dy", "0.35em").attr("text-anchor", "end").attr("font-size", 12).attr("fill", "var(--color-fg-muted)").text((t) => fk(t));
-    const ax = svg.append("g").attr("transform", `translate(0,${H - 28})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor(W / 110))).tickFormat(d3.utcFormat("%m.%y")).tickSizeOuter(0));
-    ax.attr("font-size", null).attr("font-family", null); ax.selectAll("text").attr("font-size", 12).attr("fill", "var(--color-fg-muted)"); ax.selectAll("line,path").attr("stroke", "var(--cds-chart-axis)");
-    const line = d3.line().x((r) => x(r.d)).y((r) => y(r.med_views));
-    const col = (a) => a === focus[0] ? dash.colors[0] : a === focus[1] ? dash.colors[1] : "var(--cds-chart-muted)";
-    const T = tip(box);
-    for (const [a, list] of series.slice().reverse()) {
-      const s = list.sort((p1, p2) => p1.d - p2.d), f = focus.includes(a);
-      svg.append("path").datum(s).attr("d", line).attr("fill", "none").attr("stroke", col(a)).attr("stroke-width", f ? 2 : 1.25).attr("stroke-opacity", f ? 1 : 0.6).attr("stroke-linecap", "round").attr("stroke-linejoin", "round");
-      svg.append("g").selectAll("circle").data(s).join("circle").attr("cx", (r) => x(r.d)).attr("cy", (r) => y(r.med_views)).attr("r", f ? 3.5 : 2.5).attr("fill", col(a))
-        .on("pointermove", (ev, r) => T.show(ev, [["d", "@" + a + " · " + d3.utcFormat("%m.%Y")(r.d)], ["b", "Медіана " + nf.format(Math.round(r.med_views))], ["", r.reels + " рилсів"]])).on("pointerleave", () => T.hide());
-    }
-    let prevY = -99;
-    for (const a of focus) {
-      const s = series.find((g) => g[0] === a); if (!s) continue;
-      const lastP = s[1][s[1].length - 1]; let yy = y(lastP.med_views); if (Math.abs(yy - prevY) < 14) yy = prevY + 14; prevY = yy;
-      svg.append("text").attr("x", x(lastP.d) + 6).attr("y", yy).attr("dy", "0.35em").attr("font-size", 12).attr("font-weight", 600).attr("fill", col(a)).text("@" + a);
-    }
-    box.style.minHeight = H + "px";
-    for (const [c, t] of [[dash.colors[0], "@" + ZIN], ...(focus[1] ? [[dash.colors[1], "@" + focus[1]]] : []), ["var(--cds-chart-muted)", "інші акаунти"]]) {
-      const s = el("span"); const i = el("i"); i.style.background = c; s.append(i, document.createTextNode(t)); lg.append(s);
-    }
-  }
+    const R = D.rows.map((r) => ({ ...r, v: n(r.views), x: n(r.x_median), lr: n(r.like_rate), dur: n(r.duration_s), t: Date.parse(r.date), sp: r.sphere || "Інше",
+      ad: r.promoted === "так" || (n(r.like_rate) != null && n(r.like_rate) < AD), wd: (new Date(r.date).getDay() + 6) % 7 })).filter((r) => r.v != null);
+    const LAST = Math.max(...R.map((r) => r.t));
+    const OUR_MED = med(R.filter((r) => r.account === ZIN && r.x != null).map((r) => r.v)) || 5000 / OUR_X;
+    const THR = OUR_X * OUR_MED;
+    R.forEach((r) => { r.hit = r.v >= THR || (r.x != null && r.x >= OUT && r.v >= OUR_MED); r.oh = r.hit && !r.ad; });
+    const ACCS = [...new Set(R.map((r) => r.account))].sort((a, b) => a === ZIN ? -1 : b === ZIN ? 1 : a.localeCompare(b));
+    $("upd").textContent = "Оновлено " + dmy(D.updated) + " · " + nf.format(R.length) + " рилсів · " + ACCS.length + " акаунтів";
 
-  // ---- Ми проти ринку
-  function drawMarket() {
-    const m = dash.data("market"), body = $("mkt").querySelector("tbody"), p = P();
-    if (m.status !== "ok") { body.replaceChildren(); return; }
-    const list = m.data.filter((r) => r.period === p.period).sort((a, b) => (b.account === ZIN) - (a.account === ZIN) || b.med_views - a.med_views);
-    body.replaceChildren(...list.map((r) => {
-      const tr = document.createElement("tr"); tr.dataset.key = r.key; if (r.account === ZIN) tr.className = "us";
-      tr.append(el("td", null, "@" + r.account), el("td", "n", String(r.per_week).replace(".", ",")), el("td", "n", nf.format(Math.round(r.med_views))), el("td", "n", fp(r.share5k)),
-        el("td", "n hide-sm", nf.format(r.organic_hits)), el("td", "n hide-sm", r.like_rate == null ? "—" : String(r.like_rate).replace(".", ",")),
-        el("td", "n hide-sm", r.comments_k == null ? "—" : String(r.comments_k).replace(".", ",")), el("td", "hide-sm", r.best_topic || "—"));
-      return tr;
-    }));
-  }
-  function drawGaps() {
-    const g = dash.data("gaps"), body = $("gaps").querySelector("tbody"), p = P();
-    if (g.status !== "ok") { body.replaceChildren(); return; }
-    const list = g.data.filter((r) => r.period === p.period && r.topic !== "Інше" && r.topic !== "Без підпису").sort((a, b) => b.market_rate - a.market_rate);
-    const max = Math.max(1, ...list.map((r) => Math.max(r.market_share, r.our_share)));
-    body.replaceChildren(...list.map((r) => {
-      const tr = document.createElement("tr"); tr.dataset.key = r.key;
-      const gap = r.market_rate >= 10 && r.our_share < r.market_share;
-      const cell = (v, c) => { const td = el("td", "n"); const b = el("span", "ib"); b.style.width = (50 * v / max) + "px"; b.style.background = c; td.append(b, document.createTextNode(fp(v))); return td; };
-      const t0 = el("td", null, r.topic); if (gap) t0.append(el("span", "flag", "недопрацьовано"));
-      tr.append(t0, el("td", "n", fp(r.market_rate)), cell(r.market_share, "var(--cds-chart-muted)"), cell(r.our_share, dash.colors[0]), el("td", "n hide-sm", nf.format(r.our_hits)));
-      return tr;
-    }));
-  }
+    const S = { period: "365", sphere: "", topic: "", account: "", tab: "ov", sort: "v", q: "", limit: 25, wk: "v_hook", ca: ZIN, cb: "" };
+    const PERIODS = [["30", "30 днів"], ["90", "90 днів"], ["365", "Рік"], ["all", "Увесь час"]];
+    const TITLES = { ov: "Огляд", tp: "Теми", ac: "Акаунти", cm: "Порівняння", wk: "Що працює" };
+    const inP = (r, p = S.period, end = LAST) => p === "all" || (r.t <= end && end - r.t <= Number(p) * DAY);
+    const slice = (o = {}) => R.filter((r) => inP(r) && (o.noSphere || !S.sphere || r.sp === S.sphere) && (o.noTopic || !S.topic || r.topic === S.topic) && (o.noAcc || !S.account || r.account === S.account));
+    const comp = (rs) => rs.filter((r) => r.account !== ZIN);
+    const periodName = () => PERIODS.find((p) => p[0] === S.period)[1].toLowerCase();
+    const colorFor = (a, other, i) => a === ZIN ? "var(--us)" : other === ZIN || i === 0 ? "var(--accent)" : "var(--c3)";
 
-  function drawAll() {
-    const t = window.RL.tab();
-    if (t === "plan") { drawTopics(); drawVideo(); drawDuration(); drawEngage(); }
-    if (t === "rhythm") { drawWeekday(); drawCadence(); drawMonthly(); }
-    if (t === "market") { drawMarket(); drawGaps(); }
+    // поради для порожніх станів: прибрати фільтр або розширити період
+    function fixes(extra) {
+      const a = extra ? [...extra] : [];
+      if (S.topic) a.push(["Скинути тему", () => { S.topic = ""; draw(); }]);
+      if (S.sphere) a.push(["Скинути сферу", () => { S.sphere = ""; draw(); }]);
+      if (S.account) a.push(["Скинути акаунт", () => { S.account = ""; draw(); }]);
+      const i = PERIODS.findIndex((p) => p[0] === S.period);
+      if (i < PERIODS.length - 1) a.push(["Показати за «" + PERIODS[i + 1][1] + "»", () => { S.period = PERIODS[i + 1][0]; S.limit = 25; draw(); }]);
+      return a;
+    }
+    const emptyHere = (title, text, extra) => emptyBox(title, text, fixes(extra));
+
+    // ---------- анімації ----------
+    function grow(root) {
+      const fills = root.querySelectorAll("[data-w]");
+      requestAnimationFrame(() => requestAnimationFrame(() => fills.forEach((f, i) => { f.style.transitionDelay = REDUCED ? "0ms" : Math.min(i, 14) * 35 + "ms"; f.style.width = f.dataset.w; })));
+    }
+    function countUp(node, to, fmt) {
+      if (to == null || !isFinite(to)) { node.textContent = "—"; return; }
+      if (REDUCED) { node.textContent = fmt(to); return; }
+      const t0 = performance.now(), d = 750;
+      const step = (t) => { const k = Math.max(0, Math.min(1, (t - t0) / d)), e = 1 - Math.pow(1 - k, 3); node.textContent = fmt(k < 1 ? to * e : to); if (k < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    }
+    const stagger = (nodes) => nodes.forEach((x, i) => { x.style.animationDelay = Math.min(i, 10) * 45 + "ms"; });
+
+    function topicStats(rs) {
+      const w = {};
+      for (const a of new Set(rs.map((r) => r.account))) { const lo = rs.filter((r) => r.account === a && !r.hit), det = cnt(lo, (r) => r.topic); w[a] = det ? lo.length / det : 0; }
+      const m = new Map();
+      for (const r of rs) {
+        if (!r.topic || r.topic === "Без підпису") continue;
+        const s = m.get(r.topic) || { topic: r.topic, est: 0, oh: 0, xs: [] };
+        s.est += r.hit ? 1 : w[r.account]; if (r.oh) { s.oh++; s.xs.push(r.x); }
+        m.set(r.topic, s);
+      }
+      return [...m.values()].map((s) => ({ ...s, rate: s.est ? 100 * s.oh / s.est : 0 }));
+    }
+
+    function chipsUI() {
+      $("periods").replaceChildren(...PERIODS.map(([k, t]) => { const b = el("button", "chip", t); b.setAttribute("aria-pressed", String(S.period === k)); b.onclick = () => { S.period = k; S.limit = 25; draw(); }; return b; }));
+      const f = [];
+      const add = (label, key) => { const b = el("button", "chip f", label); b.append(ico("close")); b.setAttribute("aria-label", label + ", прибрати"); b.onclick = () => { S[key] = ""; S.limit = 25; draw(); }; f.push(b); };
+      if (S.sphere) add("Сфера: " + S.sphere, "sphere");
+      if (S.topic) add("Тема: " + S.topic, "topic");
+      if (S.account) add("@" + S.account, "account");
+      $("filters").replaceChildren(...f); $("filters").hidden = !f.length;
+    }
+
+    function barRow(label, right, pct, mini, onTap, on, color) {
+      const b = el(onTap ? "button" : "div", "row" + (on ? " on" : "")); b.append(el("span", "l", label), el("span", "r", right));
+      const tr = el("span", "track"), f = el("span", "fill"); f.dataset.w = Math.max(1.5, Math.min(100, pct || 0)) + "%"; if (color) f.style.background = color; tr.append(f);
+      b.append(tr); if (mini) b.append(el("span", "mini", mini)); if (onTap) b.onclick = onTap; return b;
+    }
+
+    // ---------- Огляд ----------
+    function tileUI(k, val, fmt, sub, cls, text) {
+      const c = el("div", "card"); c.append(el("div", "k", k));
+      const b = el("div", "big" + (text ? " sm" : "")); if (text) b.textContent = val || "—"; else countUp(b, val, fmt);
+      const s = el("div", "sub" + (cls ? " " + cls : ""), sub); c.append(b, s); return c;
+    }
+    function drawOverview() {
+      const rs = slice({ noAcc: true }), cs = comp(rs), ours = rs.filter((r) => r.account === ZIN && r.x != null);
+      const ourMed = med(ours.map((r) => r.v));
+      let delta = null;
+      if (S.period !== "all") { const end = LAST - Number(S.period) * DAY; const pm = med(R.filter((r) => r.account === ZIN && r.x != null && inP(r, S.period, end) && (!S.topic || r.topic === S.topic)).map((r) => r.v)); if (ourMed && pm) delta = 100 * (ourMed / pm - 1); }
+      const hits = cs.filter((r) => r.oh && (!S.account || r.account === S.account));
+      const ts = topicStats(cs).filter((t) => t.oh >= 3).sort((a, b) => b.rate - a.rate);
+      $("hero").replaceChildren(
+        tileUI("Наша медіана", ourMed, fk, ourMed == null ? "немає ваших рилсів за період" : delta == null ? "переглядів на рилс" : (delta >= 0 ? "▲ " : "▼ ") + fp(Math.abs(delta)) + " до попереднього періоду", delta == null ? "" : delta >= 0 ? "up" : "down"),
+        tileUI("Хітів у конкурентів", hits.length, (v) => nf.format(Math.round(v)), "органічних, від " + fk(THR) + " переглядів"),
+        tileUI("Найсильніша тема", ts[0] && ts[0].topic, null, ts[0] ? "шанс хіта " + fp(ts[0].rate) : "замало хітів, щоб порівняти", "", true));
+
+      const T = [];
+      const all = topicStats(cs), avg = all.reduce((s, t) => s + t.oh, 0) / Math.max(1, all.reduce((s, t) => s + t.est, 0)) * 100;
+      if (ts[0]) T.push(["target", `Тема «${ts[0].topic}» стає хітом у ${fp(ts[0].rate)} випадків, це ${f1(ts[0].rate / Math.max(avg, .1))}× від середнього по ринку.`]);
+      const ourTopics = topicStats(rs.filter((r) => r.account === ZIN));
+      const gap = ts.find((t) => { const o = ourTopics.find((x) => x.topic === t.topic); return !o || o.est < 2; });
+      if (gap) T.push(["idea", `«${gap.topic}» добре заходить у конкурентів, а у вас за цей період таких рилсів майже немає. Варто спробувати.`]);
+      const hk = new Map(); for (const r of cs) if (r.oh && r.v_hook) { const a = hk.get(r.v_hook) || []; a.push(r.x); hk.set(r.v_hook, a); }
+      const bestHook = [...hk.entries()].filter(([, a]) => a.length >= 4).sort((a, b) => med(b[1]) - med(a[1]))[0];
+      if (bestHook) T.push(["wk", `Найсильніший хук у хітах: «${bestHook[0]}». Типовий результат ${fx(med(bestHook[1]))} від звичайного рівня акаунта.`]);
+      const short = cs.filter((r) => r.dur != null && r.dur < 15), long = cs.filter((r) => r.dur != null && r.dur >= 30);
+      if (short.length > 20 && long.length > 20) T.push(["clock", `Ролики до 15 с стають хітами в ${fp(100 * cnt(short, (r) => r.oh) / short.length)} випадків, від 30 с у ${fp(100 * cnt(long, (r) => r.oh) / long.length)}.`]);
+      if (T.length < 4) T.push(["pin", `Поріг хіта зараз ${nf.format(Math.round(THR))} переглядів, утричі більше за вашу звичайну медіану ${nf.format(Math.round(OUR_MED))}.`]);
+      const lis = T.slice(0, 4).map(([i, t]) => { const li = el("li"), c = el("span", "ic"); c.append(ico(i)); li.append(c, el("span", null, t)); return li; });
+      stagger(lis);
+      $("takes").replaceChildren(...(T.length ? lis : [emptyHere("Поки немає висновків", "За цей період замало рилсів, щоб щось порівнювати.")]));
+
+      const top = hits.filter((r) => !S.topic || r.topic === S.topic).sort((a, b) => b.v - a.v).slice(0, 20);
+      $("hits-note").hidden = !top.length;
+      const tiles = top.map(tileReel); stagger(tiles);
+      $("strip").classList.remove("end"); $("strip").classList.toggle("is-empty", !top.length);
+      $("strip").replaceChildren(...(top.length ? tiles : [emptyHere("Хітів конкурентів немає", `За «${periodName()}» жоден рилс конкурентів${S.topic ? " на цю тему" : ""} не набрав від ${fk(THR)} переглядів.`)]));
+      drawAll(rs);
+    }
+    $("strip").addEventListener("scroll", (e) => { const s = e.target; s.classList.toggle("end", s.scrollLeft + s.clientWidth >= s.scrollWidth - 4); }, { passive: true });
+    function tileReel(r) {
+      const b = el("button", "tile"), c = el("span", "cover");
+      if (r.thumb) c.style.backgroundImage = `url("${r.thumb}")`;
+      c.append(el("span", "v", fk(r.v))); if (r.x) c.append(el("span", "xx", fx(r.x)));
+      b.append(c, el("div", "who", "@" + r.account), el("div", "tp", r.topic || r.v_hook || "Без підпису"));
+      b.setAttribute("aria-label", "Рилс @" + r.account + ", " + fk(r.v) + " переглядів");
+      b.onclick = () => reelSheet(r); return b;
+    }
+    const SORTS = [["v", "Перегляди"], ["x", "× медіани"], ["t", "Нові"], ["lr", "Лайки, %"]];
+    function drawAll(rs) {
+      $("sorts").replaceChildren(...SORTS.map(([k, t]) => { const b = el("button", "chip", t); b.setAttribute("aria-pressed", String(S.sort === k)); b.onclick = () => { S.sort = k; S.limit = 25; drawAll(slice({ noAcc: true })); }; return b; }));
+      const q = S.q.trim().toLowerCase();
+      const list = rs.filter((r) => (!S.account || r.account === S.account) && (!q || (r.account + " " + (r.topic || "") + " " + (r.caption || "")).toLowerCase().includes(q))).sort((a, b) => (b[S.sort] ?? -1) - (a[S.sort] ?? -1));
+      $("all").replaceChildren(...list.slice(0, S.limit).map((r) => {
+        const it = el("button", "it"), th = el("span", "th"); if (r.thumb) th.style.backgroundImage = `url("${r.thumb}")`;
+        const mid = el("span"); mid.style.minWidth = "0";
+        const a = el("div", "a"); a.append(el("span", null, "@" + r.account)); if (r.ad && r.hit) a.append(el("i", "ad", "реклама?"));
+        mid.append(a, el("div", "b", dmy(r.date) + " · " + (r.topic || "без підпису")));
+        const c = el("span", "c", fk(r.v)); c.append(el("small", null, r.x != null ? fx(r.x) : ""));
+        it.append(th, mid, c); it.onclick = () => reelSheet(r); return it;
+      }));
+      if (!list.length) $("all").replaceChildren(q
+        ? emptyBox("Нічого не знайдено", `Немає рилсів зі словом «${S.q.trim()}» у підписі, темі чи назві акаунта.`, [["Очистити пошук", () => { $("q").value = ""; S.q = ""; drawAll(slice({ noAcc: true })); }], ...fixes()])
+        : emptyHere("Рилсів немає", "За цей період і фільтри рилсів не знайшлося."));
+      $("more").hidden = list.length <= S.limit;
+    }
+
+    // ---------- Теми ----------
+    function drawTopics() {
+      const base = comp(R.filter((r) => inP(r)));
+      const sp = new Map(); for (const r of base) { const s = sp.get(r.sp) || { n: 0, oh: 0 }; s.n++; if (r.oh) s.oh++; sp.set(r.sp, s); }
+      const spl = [...sp.entries()].sort((a, b) => b[1].oh - a[1].oh), maxS = Math.max(1, ...spl.map(([, s]) => s.oh));
+      $("spheres").replaceChildren(...(spl.length ? spl.map(([k, s]) => barRow(k, nf.format(s.oh) + " хітів", 100 * s.oh / maxS, nf.format(s.n) + " рилсів", () => { S.sphere = S.sphere === k ? "" : k; draw(); }, S.sphere === k))
+        : [emptyHere("Немає рилсів конкурентів", "За цей період конкуренти нічого не публікували.")]));
+      const rs = comp(slice({ noTopic: true })), ts = topicStats(rs).filter((t) => t.est >= 1).sort((a, b) => b.rate - a.rate);
+      const us = topicStats(R.filter((r) => inP(r) && r.account === ZIN)), usTot = us.reduce((s, t) => s + t.est, 0) || 1;
+      const max = Math.max(1, ...ts.map((t) => t.rate));
+      $("topics").replaceChildren(...(ts.length ? ts.map((t) => {
+        const u = us.find((x) => x.topic === t.topic), uShare = u ? 100 * u.est / usTot : 0;
+        return barRow(t.topic, fp(t.rate), 100 * t.rate / max, `${t.oh} хітів з ~${Math.round(t.est)} рилсів · у вас ${fp(uShare)} рилсів`, () => { S.topic = S.topic === t.topic ? "" : t.topic; draw(); }, S.topic === t.topic);
+      }) : [emptyHere("Тем немає", "Теми визначаються за підписом. За цей період і сферу немає рилсів з підписом.")]));
+      grow($("spheres")); grow($("topics"));
+    }
+
+    // ---------- Акаунти ----------
+    function accStats(a, rs) {
+      const own = rs.filter((r) => r.account === a); if (!own.length) return null;
+      const first = Math.min(...own.map((r) => r.t)), from = S.period === "all" ? first : Math.max(first, LAST - Number(S.period) * DAY);
+      const weeks = Math.max(1, (LAST - from) / (7 * DAY)), ts = topicStats(own).filter((t) => t.oh).sort((x, y) => y.oh - x.oh);
+      return { a, n: own.length, perWeek: own.length / weeks, med: med(own.filter((r) => r.x != null).map((r) => r.v)), oh: cnt(own, (r) => r.oh), share: 100 * cnt(own, (r) => r.oh) / own.length,
+        lr: med(own.map((r) => r.lr)), dur: med(own.map((r) => r.dur)), best: ts[0] && ts[0].topic, sp: own[0].sp, own };
+    }
+    const MONTHS = (() => { const d = new Date(LAST), out = []; for (let i = 11; i >= 0; i--) { const m = new Date(d.getFullYear(), d.getMonth() - i, 1); out.push(m.getFullYear() + "-" + String(m.getMonth() + 1).padStart(2, "0")); } return out; })();
+    const monthly = (a) => MONTHS.map((m) => { const v = R.filter((r) => r.account === a && r.date.startsWith(m)).map((r) => r.v); return v.length > 1 ? med(v) : null; });
+    function sparkSVG(vals, color) {
+      const vs = vals.filter((v) => v != null); if (vs.length < 2) { const d = el("div", "sub", "Замало даних для графіка"); return d; }
+      const w = 200, h = 32, lo = Math.log10(Math.max(1, Math.min(...vs))), hi = Math.log10(Math.max(...vs)), sx = w / (vals.length - 1);
+      const y = (v) => h - 3 - (h - 6) * (hi > lo ? (Math.log10(v) - lo) / (hi - lo) : .5);
+      let d = "", pen = false; vals.forEach((v, i) => { if (v == null) { pen = false; return; } d += (pen ? "L" : "M") + (i * sx).toFixed(1) + " " + y(v).toFixed(1); pen = true; });
+      const s = document.createElementNS(NS, "svg"); s.setAttribute("viewBox", `0 0 ${w} ${h}`); s.setAttribute("class", "spark"); s.setAttribute("preserveAspectRatio", "none"); s.setAttribute("aria-hidden", "true");
+      s.innerHTML = `<path class="ln" pathLength="1" d="${d}" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke"/>`; return s;
+    }
+    function avatar(a) { return el("span", "av" + (a === ZIN ? " us" : ""), a.replace(/[^a-zа-яіїє]/gi, "").slice(0, 1).toUpperCase()); }
+    function drawAccounts() {
+      const rs = R.filter((r) => inP(r) && (!S.sphere || r.sp === S.sphere) && (!S.topic || r.topic === S.topic));
+      const list = ACCS.map((a) => accStats(a, rs)).filter(Boolean).sort((x, y) => x.a === ZIN ? -1 : y.a === ZIN ? 1 : y.oh - x.oh);
+      const cards = list.map((s) => {
+        const b = el("button", "acc" + (s.a === ZIN ? " us" : "")), body = el("div"); body.style.minWidth = "0";
+        body.append(el("div", "n", "@" + s.a + (s.a === ZIN ? " · ви" : "")), el("div", "k", s.sp + (s.best ? " · сильна тема: " + s.best : "")));
+        const st = el("div", "stats");
+        for (const [k, v] of [["медіана", fk(s.med)], ["хітів", nf.format(s.oh)], ["на тиждень", f1(s.perWeek)]]) { const d = el("div"); d.append(el("b", null, v), document.createTextNode(k)); st.append(d); }
+        body.append(st, sparkSVG(monthly(s.a), s.a === ZIN ? "var(--us)" : "var(--accent)"));
+        b.append(avatar(s.a), body); b.onclick = () => accSheet(s.a); return b;
+      });
+      stagger(cards);
+      $("accs").replaceChildren(...(cards.length ? cards : [emptyHere("Жоден акаунт не публікував рилси", "За цей період і фільтри рилсів немає.")]));
+    }
+
+    // ---------- Порівняння ----------
+    function lineChart(box, series) {
+      box.replaceChildren();
+      const vals = series.flatMap((s) => s.vals).filter((v) => v != null);
+      if (vals.length < 3) { box.append(emptyBox("Замало даних для графіка", "Потрібно хоча б 3 місяці, у яких акаунт опублікував 2+ рилси. Виберіть інший акаунт.")); return; }
+      const W = Math.max(280, box.clientWidth || 320), H = 190, L = 46, RT = 14, T = 10, B = 26, nM = MONTHS.length, sx = (W - L - RT) / (nM - 1);
+      const lo = Math.log10(Math.min(...vals)), hi = Math.log10(Math.max(...vals)) + .0001;
+      const X = (i) => L + i * sx, Y = (v) => T + (H - T - B) * (1 - (Math.log10(v) - lo) / (hi - lo));
+      const path = (vs) => { let d = "", pen = false; vs.forEach((v, i) => { if (v == null) { pen = false; return; } d += (pen ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1); pen = true; }); return d; };
+      let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Медіана переглядів по місяцях">`;
+      for (const k of [0, .5, 1]) { const v = Math.pow(10, lo + (hi - lo) * k); s += `<line class="gl" x1="${L}" x2="${W - RT}" y1="${Y(v)}" y2="${Y(v)}"/><text class="ax" x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${fk(v)}</text>`; }
+      const every = W > 520 ? 1 : 2;
+      MONTHS.forEach((m, i) => { if ((nM - 1 - i) % every === 0) s += `<text class="ax" x="${X(i)}" y="${H - 6}" text-anchor="middle">${MN[+m.slice(5) - 1]}</text>`; });
+      s += `<line class="guide" x1="0" x2="0" y1="${T}" y2="${H - B}"/>`;
+      series.forEach((se, k) => { s += `<path class="ln" pathLength="1" d="${path(se.vals)}" stroke="${se.color}" style="animation-delay:${k * 150}ms"/>`; });
+      series.forEach((se, k) => se.vals.forEach((v, i) => { if (v != null) s += `<circle class="pt" data-i="${i}" cx="${X(i)}" cy="${Y(v)}" r="3.5" fill="${se.color}" style="animation-delay:${900 + k * 150}ms"/>`; }));
+      box.innerHTML = s + "</svg>";
+      const svg = box.querySelector("svg"), guide = svg.querySelector(".guide"), tip = el("div", "tip"); box.append(tip);
+      const show = (e) => {
+        const rc = svg.getBoundingClientRect(), x = (e.clientX - rc.left) * W / rc.width, i = Math.max(0, Math.min(nM - 1, Math.round((x - L) / sx)));
+        guide.setAttribute("x1", X(i)); guide.setAttribute("x2", X(i)); guide.classList.add("on");
+        svg.querySelectorAll(".pt").forEach((p) => p.classList.toggle("on", +p.dataset.i === i));
+        const m = MONTHS[i]; tip.replaceChildren(el("b", null, MN[+m.slice(5) - 1] + " " + m.slice(0, 4)));
+        for (const se of series) { const d = el("div"), l = el("span"), dt = el("i", "dot"); dt.style.background = se.color; l.append(dt, document.createTextNode("@" + se.name)); d.append(l, el("strong", null, se.vals[i] == null ? "—" : fk(se.vals[i]))); tip.append(d); }
+        const px = X(i) / W * rc.width, tw = tip.offsetWidth || 150;
+        tip.style.left = Math.max(0, Math.min(rc.width - tw, px > rc.width / 2 ? px - tw - 12 : px + 12)) + "px"; tip.classList.add("on");
+      };
+      const hide = () => { tip.classList.remove("on"); guide.classList.remove("on"); svg.querySelectorAll(".pt.on").forEach((p) => p.classList.remove("on")); };
+      svg.addEventListener("pointermove", show); svg.addEventListener("pointerdown", show); svg.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") hide(); });
+      document.addEventListener("pointerdown", (e) => { if (!box.contains(e.target)) hide(); }, { once: true });
+    }
+    function duo(label, items, max) {
+      const m = el("div", "m"); m.append(el("div", "lab", label));
+      for (const it of items) { const r = el("div", "dbar"), tr = el("span", "track"), f = el("span", "fill"); f.dataset.w = Math.max(it.v ? 1.5 : 0, 100 * (it.v || 0) / (max || 1)) + "%"; f.style.background = it.color; tr.append(f); r.append(tr, el("span", "val", it.txt)); m.append(r); }
+      return m;
+    }
+    function drawCompare() {
+      const opts = (sel, val) => { sel.replaceChildren(...ACCS.map((a) => new Option("@" + a + (a === ZIN ? " (ви)" : ""), a))); sel.value = val; };
+      if (!S.cb) { const rs = R.filter((r) => inP(r)); const c = ACCS.filter((a) => a !== ZIN).map((a) => [a, cnt(rs, (r) => r.account === a && r.oh)]).sort((x, y) => y[1] - x[1]); S.cb = c.length ? c[0][0] : ACCS[0]; }
+      opts($("ca"), S.ca); opts($("cb"), S.cb);
+      const ca = colorFor(S.ca, S.cb, 0), cb = S.cb === S.ca ? "var(--c3)" : colorFor(S.cb, S.ca, 1);
+      $("dot-a").style.background = ca; $("dot-b").style.background = cb;
+      const rs = R.filter((r) => inP(r) && (!S.topic || r.topic === S.topic)), A = accStats(S.ca, rs), B = accStats(S.cb, rs);
+      if (!A || !B) {
+        const who = [!A && S.ca, !B && S.cb].filter(Boolean).map((a) => "@" + a).join(" і ");
+        $("cmp").replaceChildren(emptyHere(who + " не публікував(ли) рилси за цей період", "Виберіть інший акаунт або ширший період."));
+      } else {
+        const M = [["Медіана переглядів", "med", fk], ["Органічних хітів", "oh", (v) => nf.format(v)], ["Частка хітів", "share", fp], ["Рилсів на тиждень", "perWeek", f1], ["Лайки, % від переглядів", "lr", fp], ["Тривалість, с (медіана)", "dur", (v) => v == null ? "—" : Math.round(v) + " с"]];
+        $("cmp").replaceChildren(...M.map(([lab, k, f]) => duo(lab, [{ v: A[k], txt: A[k] == null ? "—" : f(A[k]), color: ca }, { v: B[k], txt: B[k] == null ? "—" : f(B[k]), color: cb }], Math.max(A[k] || 0, B[k] || 0))));
+      }
+      lineChart($("cline"), [{ name: S.ca, color: ca, vals: monthly(S.ca) }, { name: S.cb, color: cb, vals: monthly(S.cb) }]);
+      const ta = topicStats(rs.filter((r) => r.account === S.ca)), tb = topicStats(rs.filter((r) => r.account === S.cb));
+      const tot = (t) => t.reduce((s, x) => s + x.est, 0) || 1, A2 = tot(ta), B2 = tot(tb);
+      const names = [...new Set([...ta, ...tb].map((t) => t.topic))].map((t) => [t, 100 * ((ta.find((x) => x.topic === t) || {}).est || 0) / A2, 100 * ((tb.find((x) => x.topic === t) || {}).est || 0) / B2]).sort((x, y) => (y[1] + y[2]) - (x[1] + x[2])).slice(0, 8);
+      const mx = Math.max(1, ...names.flatMap((x) => [x[1], x[2]]));
+      $("ctopics").replaceChildren(...(names.length ? names.map(([t, a, b]) => duo(t, [{ v: a, txt: fp(a), color: ca }, { v: b, txt: fp(b), color: cb }], mx)) : [emptyHere("Немає тем для порівняння", "У вибраних акаунтів немає рилсів з підписом за цей період.")]));
+      grow($("cmp")); grow($("ctopics"));
+    }
+    $("ca").onchange = (e) => { S.ca = e.target.value; drawCompare(); };
+    $("cb").onchange = (e) => { S.cb = e.target.value; drawCompare(); };
+
+    // ---------- Що працює ----------
+    const WK = [["v_hook", "Хук"], ["v_frame", "Перший кадр"], ["v_cta", "Заклик"], ["v_goal", "Задача"], ["v_overlay", "Плашка"], ["v_subs", "Субтитри"], ["v_speech", "Мова"]];
+    function drawWorks() {
+      $("wseg").replaceChildren(...WK.map(([k, t]) => { const b = el("button", "chip", t); b.setAttribute("aria-pressed", String(S.wk === k)); b.onclick = () => { S.wk = k; drawWorks(); }; return b; }));
+      const rs = comp(slice()), hits = rs.filter((r) => r.oh && r[S.wk]);
+      const g = new Map(); for (const r of hits) { const a = g.get(r[S.wk]) || []; a.push(r); g.set(r[S.wk], a); }
+      const list = [...g.entries()].map(([k, a]) => [k, a, med(a.map((r) => r.x))]).sort((x, y) => y[1].length - x[1].length), tot = hits.length || 1, mx = Math.max(1, ...list.map((x) => x[1].length));
+      $("wrows").replaceChildren(...(list.length ? list.map(([k, a, x]) => barRow(k, fp(100 * a.length / tot), 100 * a.length / mx, a.length + " хітів · типово " + fx(x) + " від медіани акаунта", () => listSheet(k, a)))
+        : [emptyHere("Розібраних хітів немає", "Розбір відео робить тетрадь Colab для хітів. За цей період їх немає, або тетрадь ще не запускали з новими акаунтами.")]));
+      const DB = [["до 15 с", (d) => d < 15], ["15–30 с", (d) => d >= 15 && d < 30], ["30–60 с", (d) => d >= 30 && d < 60], ["понад 60 с", (d) => d >= 60]];
+      const dr = DB.map(([k, f]) => { const a = rs.filter((r) => r.dur != null && f(r.dur)); return [k, a.length, a.length ? 100 * cnt(a, (r) => r.oh) / a.length : 0, med(a.map((r) => r.v))]; }), dm = Math.max(1, ...dr.map((x) => x[2]));
+      $("dur").replaceChildren(...(dr.some((x) => x[1]) ? dr.map(([k, c, p, m]) => barRow(k, fp(p), 100 * p / dm, c + " рилсів · медіана " + fk(m))) : [emptyHere("Немає тривалості", "Тривалість приходить із тетраді Colab. За цей період таких рилсів немає.")]));
+      const WD = ["Понеділок", "Вівторок", "Середа", "Четвер", "П’ятниця", "Субота", "Неділя"];
+      const wr = WD.map((k, i) => { const a = rs.filter((r) => r.wd === i); return [k, a.length, a.length ? 100 * cnt(a, (r) => r.oh) / a.length : 0, med(a.map((r) => r.v))]; }), wm = Math.max(1, ...wr.map((x) => x[2]));
+      $("wday").replaceChildren(...(rs.length ? wr.map(([k, c, p, m]) => barRow(k, fp(p), 100 * p / wm, c + " рилсів · медіана " + fk(m))) : [emptyHere("Немає рилсів", "За цей період і фільтри конкуренти нічого не публікували.")]));
+      grow($("wrows")); grow($("dur")); grow($("wday"));
+    }
+
+    // ---------- аркуші ----------
+    function sheet(nodes) { $("sheetbody").replaceChildren(...nodes); document.body.classList.add("sheet-open", "lock-scroll"); $("sheet").scrollTop = 0; grow($("sheetbody")); back(); }
+    function closeSheet() { document.body.classList.remove("sheet-open", "lock-scroll"); back(); }
+    $("shade").onclick = closeSheet; $("sheet-x").onclick = closeSheet;
+    addEventListener("keydown", (e) => { if (e.key === "Escape") { if (document.body.classList.contains("sheet-open")) closeSheet(); else drawer(false); } });
+    if (tg && tg.BackButton) tg.BackButton.onClick(() => { if (document.body.classList.contains("sheet-open")) closeSheet(); else drawer(false); });
+    function reelSheet(r) {
+      const hd = el("div", "hd"), cov = el("div", "cov"); if (r.thumb) cov.style.backgroundImage = `url("${r.thumb}")`;
+      const info = el("div"); info.style.minWidth = "0";
+      info.append(el("div", "big", fk(r.v)), el("div", "sub", "переглядів · @" + r.account + " · " + dmy(r.date)));
+      if (r.x != null) info.append(el("div", "sub", fx(r.x) + " від звичайного рівня акаунта"));
+      const tags = el("div", "tags"); for (const t of [r.sp, r.topic, r.oh ? "органічний хіт" : null]) if (t) tags.append(el("span", "tag", t)); if (r.ad) tags.append(el("span", "ad", "схоже на рекламу"));
+      info.append(tags); hd.append(cov, info);
+      const kv = el("dl", "kv");
+      for (const [k, v] of [["Хук", r.v_hook], ["Перший кадр", r.v_frame], ["Заклик", r.v_cta || r.cta], ["Задача", r.v_goal], ["Плашка", r.v_overlay], ["Субтитри", r.v_subs], ["Мова", r.v_speech], ["Тривалість", r.dur != null ? Math.round(r.dur) + " с" : null], ["Лайки", r.lr != null ? fp(r.lr) + " від переглядів" : null]])
+        if (v) kv.append(el("dt", null, k), el("dd", null, v));
+      const btns = el("div", "btns"), go = el("button", "btn"); go.append(ico("ext"), document.createTextNode("Instagram")); go.onclick = () => open(r.url);
+      const idea = el("button", "btn p"); idea.append(ico("idea"), document.createTextNode("В ідеї")); idea.onclick = () => addIdea(r, idea);
+      btns.append(idea, go);
+      sheet([hd, kv.children.length ? kv : el("p", "sub", "Розбору відео для цього рилса немає: його роблять лише для хітів."), el("div", "cap", r.caption || "Без підпису"), btns]);
+    }
+    async function addIdea(r, btn) {
+      btn.disabled = true; btn.lastChild.textContent = "Додаю…";
+      try { await TG.api("add", { idea: { id: r.code, code: r.code, title: "", note: "", status: "idea", url: r.url, at: new Date().toISOString() } }); btn.lastChild.textContent = "Додано в ідеї"; }
+      catch (e) { btn.disabled = false; btn.lastChild.textContent = "Не вдалося, ще раз"; }
+    }
+    function listSheet(title, rs) {
+      const l = el("div", "list");
+      for (const r of rs.slice().sort((a, b) => (b.x || 0) - (a.x || 0)).slice(0, 30)) {
+        const it = el("button", "it"), th = el("span", "th"); if (r.thumb) th.style.backgroundImage = `url("${r.thumb}")`;
+        const mid = el("span"); mid.style.minWidth = "0"; const a = el("div", "a"); a.append(el("span", null, "@" + r.account)); mid.append(a, el("div", "b", r.topic || ""));
+        const c = el("span", "c", fk(r.v)); c.append(el("small", null, fx(r.x))); it.append(th, mid, c); it.onclick = () => reelSheet(r); l.append(it);
+      }
+      sheet([el("h2", null, title), el("p", "note", rs.length + " хітів, від найсильнішого відриву"), l]);
+    }
+    function accSheet(a) {
+      const rs = R.filter((r) => inP(r)), s = accStats(a, rs);
+      const hd = el("div"); hd.style.cssText = "display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:center;padding-right:40px";
+      const t = el("div"); const nm = el("div", "n", "@" + a); nm.style.fontWeight = "600"; t.append(nm, el("div", "k", s ? s.sp : "")); hd.append(avatar(a), t);
+      const nodes = [hd];
+      if (!s) { nodes.push(emptyBox("За «" + periodName() + "» рилсів немає", "Цей акаунт нічого не публікував у вибраний період.", fixes())); sheet(nodes); return; }
+      const st = el("div", "stats"); st.style.marginTop = "16px";
+      for (const [k, v] of [["рилсів", nf.format(s.n)], ["медіана", fk(s.med)], ["хітів", nf.format(s.oh)], ["на тиждень", f1(s.perWeek)], ["лайки", fp(s.lr)], ["тривалість", s.dur ? Math.round(s.dur) + " с" : "—"]]) { const d = el("div"); d.append(el("b", null, v), document.createTextNode(k)); st.append(d); }
+      nodes.push(st, sparkSVG(monthly(a), a === ZIN ? "var(--us)" : "var(--accent)"));
+      const top = s.own.filter((r) => r.hit).sort((x, y) => y.v - x.v).slice(0, 12);
+      nodes.push(el("h2", null, "Найкращі рилси"));
+      if (top.length) { const sp = el("div", "strip"); sp.style.marginTop = "12px"; const tl = top.map(tileReel); stagger(tl); sp.append(...tl); nodes.push(sp); }
+      else nodes.push(emptyBox("Хітів за цей період немає", `Жоден рилс не набрав від ${fk(THR)} переглядів і не перевищив утричі звичайний рівень акаунта.`));
+      const ts = topicStats(s.own).sort((x, y) => y.est - x.est).slice(0, 6), tot = ts.reduce((q, x) => q + x.est, 0) || 1;
+      if (ts.length) { const box = el("div", "rows"); box.style.marginTop = "8px"; box.append(...ts.map((x) => barRow(x.topic, fp(100 * x.est / tot), 100 * x.est / ts[0].est, x.oh ? x.oh + " хітів" : null, null, false, a === ZIN ? "var(--us)" : null))); nodes.push(el("h2", null, "Про що знімає"), box); }
+      const btns = el("div", "btns"); btns.style.marginTop = "16px";
+      const f = el("button", "btn", S.account === a ? "Прибрати фільтр" : "Фільтрувати огляд"); f.onclick = () => { S.account = S.account === a ? "" : a; closeSheet(); setTab("ov"); };
+      btns.append(f);
+      if (a !== ZIN) { const c = el("button", "btn p", "Порівняти з нами"); c.onclick = () => { S.ca = ZIN; S.cb = a; closeSheet(); setTab("cm"); }; btns.append(c); }
+      nodes.push(btns); sheet(nodes);
+    }
+
+    // ---------- розділи ----------
+    function setTab(t) {
+      S.tab = t; $("title").textContent = TITLES[t];
+      document.querySelectorAll(".item[data-t]").forEach((b) => { if (b.dataset.t === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+      document.querySelectorAll("section[data-p]").forEach((s) => { s.hidden = s.dataset.p !== t; });
+      drawer(false); draw(); window.scrollTo({ top: 0, behavior: REDUCED ? "auto" : "smooth" });
+      try { history.replaceState(null, "", "#" + t); } catch (e) {}
+    }
+    document.querySelectorAll(".item[data-t]").forEach((b) => { b.onclick = () => setTab(b.dataset.t); });
+    let qT; $("q").oninput = (e) => { clearTimeout(qT); qT = setTimeout(() => { S.q = e.target.value; S.limit = 25; drawAll(slice({ noAcc: true })); }, 200); };
+    $("more").onclick = () => { S.limit += 25; drawAll(slice({ noAcc: true })); };
+    let lastW = innerWidth, rT;
+    addEventListener("resize", () => { if (innerWidth === lastW) return; lastW = innerWidth; clearTimeout(rT); rT = setTimeout(() => { if (S.tab === "cm") drawCompare(); }, 200); });
+
+    function draw() { chipsUI(); ({ ov: drawOverview, tp: drawTopics, ac: drawAccounts, cm: drawCompare, wk: drawWorks })[S.tab](); }
+    const start = location.hash.slice(1);
+    if (TITLES[start]) setTab(start); else draw();
   }
-  window.RL.redraws.push(drawAll);
-  dash.onData(drawAll);
-})();
-</script>
-</div>
-<script>
-(() => {
-  const D = window.REELS_DATA || { rows: [] };
-  const nf = new Intl.NumberFormat("uk-UA");
-  const dmy = (d) => d ? d.split("-").reverse().join(".") : "—";
-  document.getElementById("total-hint").textContent = "з " + nf.format(D.rows.length) + " зібраних у " + (D.accounts || 9) + " акаунтів";
-  document.getElementById("upd").textContent = "Дані оновлено " + dmy(D.updated) + ", останній рилс " + dmy(D.last_reel);
-  TG.gate().catch(() => {});
 })();
 </script>
 </body>
