@@ -397,6 +397,7 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
         <div class="form">
           <label>Про що рилс (необов’язково)<input type="text" id="f-title" maxlength="120" placeholder="Напр.: 3 ознаки, що дитині потрібен логопед"></label>
           <label>Підпис до рилса (необов’язково)<textarea id="f-cap" maxlength="2200" placeholder="Вставте текст підпису, якщо вже є"></textarea></label>
+          <label>Що звучить у перші секунди (необов’язково)<input type="text" id="f-speech" maxlength="300" placeholder="Перша фраза, якщо у відео є мова"></label>
           <div class="row2f">
             <label>Тема<select id="f-topic"><option value="">Визначить ШІ</option></select></label>
             <label>День публікації<select id="f-day"></select></label>
@@ -493,7 +494,15 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
     const DB = [["до 15 с", 0, 15], ["15–30 с", 15, 30], ["30–60 с", 30, 60], ["понад 60 с", 60, 1e9]];
     const durs = DB.map(([k, lo, hi]) => { const a = cs.filter((r) => r.dur != null && r.dur >= lo && r.dur < hi); return { k, lo, hi, n: a.length, rate: a.length ? 100 * a.filter((r) => r.oh).length / a.length : 0 }; });
     const days = [0, 1, 2, 3, 4, 5, 6].map((i) => { const a = cs.filter((r) => r.wd === i); return { i, n: a.length, rate: a.length ? 100 * a.filter((r) => r.oh).length / a.length : 0 }; });
-    return { OUR, THR, topics, base, hooks, durs, days, hits, overlay: share("v_overlay", "Є"), subs: share("v_subs", "Є"), speech1: share("v_speech", "З першої секунди") };
+    // конкретні приклади з розшифровками: найсильніші хіти ринку і наші найкращі та найслабші рилси
+    const ex = (r) => `@${r.account} · ${fk(r.v)} перегл. · ${r.x ? r.x.toFixed(1) + "× медіани" : ""} · хук: ${r.v_hook || "?"} · кадр: ${r.v_frame || "?"} · плашка: ${r.v_overlay || "?"} · ${r.dur ? Math.round(r.dur) + " с" : ""}${r.v_roles ? " · структура: " + r.v_roles : ""} ${r.v_text ? " · перші слова: «" + r.v_text.slice(0, 160) + "»" : " · без мови (музика або дія в кадрі)"}`;
+    // лише справжня мова: переважно кирилиця, не музика й не прямі ефіри
+    const realText = (t) => { const L = (t || "").match(/\p{L}/gu) || [], C = (t || "").match(/[а-яіїєґё]/giu) || []; return L.length >= 25 && C.length / L.length >= 0.7; };
+    const withText = (a) => a.filter((r) => r.x != null && (r.dur == null || r.dur <= 180)).map((r) => realText(r.v_text) ? r : { ...r, v_text: "" });
+    const exHits = withText(hits).sort((a, b) => b.x - a.x).slice(0, 20).map(ex);
+    const ours = withText(R.filter((r) => r.account === ZIN && r.v_hook));
+    const exOurTop = ours.slice().sort((a, b) => b.x - a.x).slice(0, 6).map(ex);
+    return { OUR, THR, topics, base, hooks, durs, days, hits, exHits, exOurTop, overlay: share("v_overlay", "Є"), subs: share("v_subs", "Є"), speech1: share("v_speech", "З першої секунди") };
   }
   const fp = (v) => v == null ? "—" : (Math.round(v * 10) / 10).toString().replace(".", ",") + "%";
   const fk = (v) => v == null ? "—" : v >= 1e4 ? new Intl.NumberFormat("uk-UA", { notation: "compact", maximumFractionDigits: 1 }).format(v) : nf.format(Math.round(v));
@@ -532,19 +541,65 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
     URL.revokeObjectURL(v.src);
     return out;
   }
-  async function audio(f) {
-    const AC = window.AudioContext || window.webkitAudioContext; if (!AC || !window.OfflineAudioContext) return null;
-    const buf = await f.arrayBuffer(), ac = new AC();
-    const dec = await new Promise((res, rej) => ac.decodeAudioData(buf, res, rej)).finally(() => ac.close && ac.close());
-    const len = Math.min(dec.duration, 90), off = new OfflineAudioContext(1, Math.ceil(16000 * len), 16000);
-    const src = off.createBufferSource(); src.buffer = dec; src.connect(off.destination); src.start(0);
-    const pcm = (await off.startRendering()).getChannelData(0);
+  // Звук: 1) швидко розпакувати з файлу; 2) якщо не вийшло (iPhone, MOV) — програти беззвучно для вас і записати доріжку
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const b64 = (bytes) => { let bin = ""; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); };
+  function wavB64(pcm) {
     const wav = new DataView(new ArrayBuffer(44 + pcm.length * 2)), ws = (o, s) => { for (let i = 0; i < s.length; i++) wav.setUint8(o + i, s.charCodeAt(i)); };
     ws(0, "RIFF"); wav.setUint32(4, 36 + pcm.length * 2, true); ws(8, "WAVE"); ws(12, "fmt "); wav.setUint32(16, 16, true); wav.setUint16(20, 1, true); wav.setUint16(22, 1, true);
     wav.setUint32(24, 16000, true); wav.setUint32(28, 32000, true); wav.setUint16(32, 2, true); wav.setUint16(34, 16, true); ws(36, "data"); wav.setUint32(40, pcm.length * 2, true);
     for (let i = 0; i < pcm.length; i++) { const s = Math.max(-1, Math.min(1, pcm[i])); wav.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true); }
-    const bytes = new Uint8Array(wav.buffer); let bin = ""; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
-    return btoa(bin);
+    return b64(new Uint8Array(wav.buffer));
+  }
+  async function decodeToWav(buf) {
+    if (!AC || !window.OfflineAudioContext) throw new Error("no_audio_api");
+    const ac = new AC();
+    const dec = await new Promise((res, rej) => { const p = ac.decodeAudioData(buf, res, rej); if (p && p.catch) p.catch(rej); }).finally(() => { try { ac.close(); } catch (e) {} });
+    const len = Math.min(dec.duration, 90), off = new OfflineAudioContext(1, Math.ceil(16000 * len), 16000);
+    const src = off.createBufferSource(); src.buffer = dec; src.connect(off.destination); src.start(0);
+    const pcm = (await off.startRendering()).getChannelData(0);
+    let peak = 0; for (let i = 0; i < pcm.length; i += 50) peak = Math.max(peak, Math.abs(pcm[i]));
+    if (peak < 0.003) throw new Error("silent");
+    return { data: wavB64(pcm), mime: "audio/wav" };
+  }
+  // Готуємо запис ще в момент натискання кнопки: iPhone дозволяє звук лише у відповідь на дотик
+  let REC = null;
+  function unlockRecorder(f) {
+    REC = null;
+    if (!AC || !window.MediaRecorder) return;
+    try {
+      const ac = new AC(), v = document.createElement("video");
+      v.src = URL.createObjectURL(f); v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto";
+      const src = ac.createMediaElementSource(v), dest = ac.createMediaStreamDestination(); src.connect(dest); // не до динаміків — вам тиша
+      ac.resume && ac.resume();
+      const p = v.play(); if (p && p.then) p.then(() => v.pause()).catch(() => {});
+      REC = { ac, v, dest };
+    } catch (e) { REC = null; }
+  }
+  async function recordAudio(maxSec, onTick) {
+    if (!REC) throw new Error("no_recorder");
+    const { ac, v, dest } = REC;
+    const types = ["audio/mp4", "audio/webm;codecs=opus", "audio/webm", ""];
+    const type = types.find((t) => !t || (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)));
+    const rec = new MediaRecorder(dest.stream, type ? { mimeType: type } : undefined), chunks = [];
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    const done = new Promise((res) => { rec.onstop = res; });
+    await (ac.resume ? ac.resume() : null);
+    v.currentTime = 0; rec.start(1000);
+    await v.play();
+    const lim = Math.min(maxSec, v.duration || maxSec), t0 = Date.now();
+    await new Promise((res) => { const iv = setInterval(() => { const t = (Date.now() - t0) / 1000; onTick && onTick(Math.min(t, lim), lim); if (t >= lim || v.ended) { clearInterval(iv); res(); } }, 250); });
+    v.pause(); rec.stop(); await done;
+    try { ac.close(); } catch (e) {} URL.revokeObjectURL(v.src);
+    const blob = new Blob(chunks, { type: rec.mimeType || type || "audio/mp4" });
+    if (blob.size < 2000) throw new Error("empty_record");
+    const buf = await blob.arrayBuffer();
+    try { return await decodeToWav(buf.slice(0)); }
+    catch (e) { const mt = (rec.mimeType || "").split(";")[0]; return { data: b64(new Uint8Array(buf)), mime: mt === "audio/mp4" ? "video/mp4" : mt || "audio/webm" }; }
+  }
+  async function audio(f, onTick) {
+    try { return await decodeToWav(await f.arrayBuffer()); } catch (e) {}
+    try { return await recordAudio(60, onTick); } catch (e) { return null; }
   }
 
   // ---------- запит до ШІ ----------
@@ -554,9 +609,10 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
   function buildPrompt(o) {
     const m = M, lines = [];
     lines.push("Ти — досвідчений SMM-стратег для корекційних центрів і дитячих фахівців в Україні (логопеди, нейропсихологи, РАС, сенсорика, дитячі психологи). Аудиторія — батьки дітей з порушеннями мовлення й розвитку. Акаунт: корекційний центр @logocenter_zinchenko.");
-    lines.push("Перед тобою рилс до публікації: кадри з таймкодами і звукова доріжка" + (o.hasAudio ? "" : " (звук витягти не вдалося — оцінюй за кадрами й підписом)") + `. Тривалість: ${o.dur ? Math.round(o.dur) + " с" : "невідома"}. Плановий день публікації: ${WD[o.day]}.`);
+    lines.push("Перед тобою рилс до публікації: кадри з таймкодами і звукова доріжка" + (o.hasAudio ? "" : " (звук витягти не вдалося — оцінюй за кадрами, підписом і текстом мови від автора, якщо він є; не вигадуй, що звучить)") + `. Тривалість: ${o.dur ? Math.round(o.dur) + " с" : "невідома"}. Плановий день публікації: ${WD[o.day]}.`);
     if (o.title) lines.push("Про що рилс, зі слів автора: " + o.title);
     if (o.caption) lines.push("Підпис: " + o.caption);
+    if (o.speech) lines.push("Що звучить у відео, зі слів автора: " + o.speech);
     if (o.topic) lines.push("Тема, яку вибрав автор: " + o.topic);
     if (m) {
       lines.push(`\nДані ринку (${nf.format(m.hits.length)} органічних хітів конкурентів). Наша звичайна медіана ${nf.format(Math.round(m.OUR))} переглядів; хіт — від ${nf.format(Math.round(m.THR))}. Середній шанс хіта ${fp(m.base)}.`);
@@ -565,8 +621,10 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
       lines.push("Шанс хіта за тривалістю: " + m.durs.map((d) => `${d.k} ${fp(d.rate)}`).join("; ") + ".");
       lines.push(`У хітах: плашка-заголовок у ${m.overlay}% , субтитри у ${m.subs}%, мова з першої секунди у ${m.speech1}%.`);
       lines.push("Шанс хіта за днем: " + m.days.map((d) => `${WD[d.i]} ${fp(d.rate)}`).join("; ") + ".");
+      if (m.exHits.length) lines.push("\nНайсильніші органічні хіти конкурентів (реальні перші слова з розшифровки):\n- " + m.exHits.join("\n- "));
+      if (m.exOurTop.length) lines.push("\nНаші найкращі рилси:\n- " + m.exOurTop.join("\n- "));
     }
-    lines.push(`\nОціни рилс чесно і конкретно, спираючись на те, що бачиш у кадрах і чуєш у звуці, та на дані ринку. Порівнюй із тим, що працює в хітах. Не вигадуй того, чого немає в кадрах. Звертай увагу на етику: без обіцянок «вилікуємо», без діагнозів по відео, обережно з обличчями дітей.
+    lines.push(`\nОціни рилс чесно і конкретно, спираючись на те, що бачиш у кадрах і чуєш у звуці, та на дані ринку. Порівнюй із конкретними прикладами вище: чим цей рилс схожий на найсильніші хіти і на наші найкращі рилси, а чого йому бракує порівняно з ними. У коментарях і порадах посилайся на ці приклади (називай акаунт і що там спрацювало). Варіанти першої фрази пиши в стилі перших слів найсильніших хітів, але під тему цього рилса. Не вигадуй того, чого немає в кадрах. Звертай увагу на етику: без обіцянок «вилікуємо», без діагнозів по відео, обережно з обличчями дітей.
 Поверни ЛИШЕ JSON українською за схемою:
 {"score": ціле 0–100 (шанс стати хітом відносно ринку),
  "verdict": "одне речення-висновок",
@@ -589,9 +647,10 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
   }
 
   const STEPS = [["frames", "Вирізаю кадри з відео"], ["audio", "Готую звук"], ["ai", "ШІ дивиться і слухає рилс (до хвилини)"]];
+  const STEP_TXT = {};
   function stepUI(cur, skipped) {
     const order = STEPS.map((s) => s[0]), ci = order.indexOf(cur);
-    $("steps").replaceChildren(...STEPS.map(([k, t], i) => { const r = el("div", "step" + (i < ci || cur === "end" ? " done" : i === ci ? " now" : "")), d = el("span", "dot2"); if (i < ci || cur === "end") d.append(ico("check")); r.append(d, el("span", null, t + (skipped && skipped[k] ? " — пропущено" : ""))); return r; }));
+    $("steps").replaceChildren(...STEPS.map(([k, t], i) => { const r = el("div", "step" + (i < ci || cur === "end" ? " done" : i === ci ? " now" : "")), d = el("span", "dot2"); if (i < ci || cur === "end") d.append(ico("check")); r.append(d, el("span", null, (STEP_TXT[k] || t) + (skipped && skipped[k] ? " — не вдалося" : ""))); return r; }));
   }
   function skeletonResult() {
     const c = el("div", "card"), sb = el("div", "scorebox"), s1 = el("div", "sk"); s1.style.cssText = "width:100%;aspect-ratio:1;border-radius:50%";
@@ -613,6 +672,7 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
   $("go").onclick = async () => {
     if (!file) return;
     const go = $("go"); go.disabled = true;
+    unlockRecorder(file); delete STEP_TXT.audio;
     $("progress").hidden = false; skeletonResult(); const skipped = {};
     $("progress").scrollIntoView({ behavior: "smooth", block: "start" });
     try {
@@ -621,10 +681,11 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
       let fr = [];
       try { fr = await frames(file, meta && meta.dur); } catch (e) { throw Object.assign(new Error("frames"), { ui: ["Не вдалося прочитати відео", "Схоже, цей формат не відкривається в Telegram. Спробуйте MP4 або збережіть відео з галереї ще раз."] }); }
       stepUI("audio");
-      let au = null; try { au = await audio(file); } catch (e) { au = null; } if (!au) skipped.audio = true;
+      const au = await audio(file, (t, lim) => { STEP_TXT.audio = `Записую звук: ${Math.round(t)} з ${Math.round(lim)} с (відео грає беззвучно для вас)`; stepUI("audio"); });
+      if (!au) { skipped.audio = true; STEP_TXT.audio = "Звук"; }
       stepUI("ai", skipped);
-      const o = { dur: meta && meta.dur, day: +$("f-day").value, title: $("f-title").value.trim(), caption: $("f-cap").value.trim(), topic: $("f-topic").value, hasAudio: !!au };
-      const j = await TG.api("analyze", { prompt: buildPrompt(o), frames: fr, audio: au, title: o.title || file.name, meta: { dur: o.dur, day: WD[o.day], topic: o.topic } });
+      const o = { dur: meta && meta.dur, day: +$("f-day").value, title: $("f-title").value.trim(), caption: $("f-cap").value.trim(), topic: $("f-topic").value, speech: $("f-speech").value.trim(), hasAudio: !!au };
+      const j = await TG.api("analyze", { prompt: buildPrompt(o), frames: fr, audio: au && au.data, audioMime: au && au.mime, title: o.title || file.name, meta: { dur: o.dur, day: WD[o.day], topic: o.topic } });
       stepUI("end", skipped);
       setTimeout(() => { $("progress").hidden = true; }, 600);
       renderResult(j.result, { dur: o.dur, day: o.day, topic: o.topic, title: o.title }, j.left);
