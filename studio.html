@@ -700,7 +700,8 @@ button.pill { border: 0; cursor: pointer; }
     if (c === "no_gemini_key") return "Немає ключа Gemini у властивостях скрипта (GEMINI_API_KEY).";
     if (c === "limit") return "Ліміт запитів Студії на сьогодні вичерпано. Можна збільшити властивістю STUDIO_LIMIT.";
     if (c === "bad_model") return "Модель Gemini не знайдена. Перевірте властивість GEMINI_MODEL.";
-    if (c === "gemini_busy") return "Gemini зараз перевантажений або закінчилась квота. Спробуйте за хвилину.";
+    if (c === "gemini_busy") return e.message && /[а-яіїєґ]/i.test(e.message) ? e.message : "Gemini зараз перевантажений або вичерпано ліміт. Зачекайте 1–2 хвилини і натисніть ще раз.";
+    if (/high demand|overload|unavailable/i.test(e.message || "")) return "Сервери Gemini зараз перевантажені (це на боці Google). Зачекайте 1–2 хвилини і натисніть ще раз.";
     if (c === "bad_answer") return "ШІ відповів нечитабельно. Натисніть ще раз.";
     if (c === "no_ig") return e.message || "На аркуші ig мало даних.";
     if (c === "expired") return "Сесія застаріла. Закрийте і знову відкрийте бота.";
