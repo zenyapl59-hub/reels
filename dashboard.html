@@ -216,6 +216,19 @@ select { font: inherit; font-size: 15px; width: 100%; min-height: 44px; border: 
 .empty b { font-size: 14px; }
 .empty p { margin: 0; font-size: 13px; color: var(--muted); }
 .chips.wrap { flex-wrap: wrap; overflow: visible; }
+.adl { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-top: 12px; }
+@media (max-width: 639px) { .adl { grid-template-columns: 1fr; } }
+.adc { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: none; text-align: left; width: 100%; animation: enter .4s var(--ease) both; transition: border-color .2s, background .2s; }
+@media (hover: hover) { .adc:hover { border-color: var(--muted); background: var(--soft); } }
+.adc .th { width: 76px; height: 76px; border-radius: 10px; background: var(--soft) center/cover; position: relative; }
+.adc .th.vid::after { content: "▶"; position: absolute; right: 5px; bottom: 4px; font-size: 11px; color: #fff; text-shadow: 0 1px 3px #0009; }
+.adc .pg { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adc .tx { font-size: 13px; color: var(--muted); margin-top: 4px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.adc .tags { margin-top: 6px; }
+.tag.hot { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.tag.us { background: var(--us-soft, var(--soft)); color: var(--us); border-color: transparent; }
+.adacc { margin-top: 12px; } .adacc summary { cursor: pointer; font-size: 14px; font-weight: 500; padding: 8px 0; }
+.sheet .cov.sq { height: 112px; }
 .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .btn { min-height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); font-weight: 500; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; transition: background .2s, border-color .2s; }
 .btn:hover { border-color: var(--muted); }
@@ -305,6 +318,7 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
     <div class="sep"></div>
     <a class="item" href="ideas.html" data-ico="idea"><span class="lbl">Банк ідей</span></a>
     <a class="item" href="check.html" data-ico="scan"><span class="lbl">Перевірка</span></a>
+    <a class="item" href="studio.html" data-ico="spark"><span class="lbl">Студія</span></a>
     <div class="spacer"></div>
     <button class="item collapse" id="collapse" data-ico="chev" aria-label="Згорнути меню"><span class="lbl">Згорнути</span></button>
   </nav>
@@ -377,10 +391,17 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
     </section>
 
     <section data-p="ad" hidden>
-      <p class="pagenote">Активна реклама у Facebook та Instagram з бібліотеки реклами Meta. Тап відкриває бібліотеку з уже готовим пошуком по Україні.</p>
-      <div class="card"><h2>Конкуренти</h2><p class="note" id="ad-note"></p><div class="rows" id="ad-accs"></div></div>
-      <div class="card"><h2>Уся ніша в Україні</h2><p class="note">Уся активна реклама за ключовими словами: центри, приватні фахівці, курси.</p><div class="chips wrap" id="ad-kw"></div>
-        <div class="search" id="ad-sbox"><input type="search" id="ad-q" placeholder="Своє слово, напр. «запуск мовлення»" aria-label="Пошук у бібліотеці реклами" enterkeyhint="search"></div></div>
+      <p class="pagenote" id="ad-upd">Активна реклама у Facebook та Instagram в Україні з бібліотеки реклами Meta.</p>
+      <div class="hero" id="ad-hero"></div>
+      <div class="card">
+        <div class="chips" id="ad-f"></div>
+        <div class="chips" id="ad-s" style="margin-top:8px"></div>
+        <div class="adl" id="ad-list"></div>
+        <button class="more" id="ad-more" hidden>Показати ще</button>
+      </div>
+      <div class="card"><h2>Шукати в бібліотеці самостійно</h2><p class="note">Відкриває бібліотеку реклами з готовим пошуком по Україні, лише активна реклама.</p><div class="chips wrap" id="ad-kw"></div>
+        <div class="search" id="ad-sbox"><input type="search" id="ad-q" placeholder="Своє слово, напр. «запуск мовлення»" aria-label="Пошук у бібліотеці реклами" enterkeyhint="search"></div>
+        <details class="adacc"><summary>Конкуренти поіменно</summary><div class="rows" id="ad-accs"></div></details></div>
       <div class="card"><h2>На що дивитись</h2><ul class="takes" id="ad-tips"></ul></div>
     </section>
   </main>
@@ -393,6 +414,7 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
 (() => {
   const NS = "http://www.w3.org/2000/svg";
   const ICON = {
+    spark: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
     ov: '<path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z"/>',
     tp: '<path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/>',
     ac: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.6.8 2.7 2.6 3 5.2"/>',
@@ -948,35 +970,107 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
       nodes.push(btns); sheet(nodes);
     }
 
-    // ---------- реклама: посилання на бібліотеку реклами Meta ----------
-    // API Meta віддає звичайну (не політичну) рекламу лише для ЄС, тому для України відкриваємо саму бібліотеку з готовим пошуком.
-    // AD_PAGES: ID сторінки Facebook акаунта (число після view_all_page_id= в адресі бібліотеки). Без ID — пошук за назвою.
-    const AD_PAGES = {
-      // "skill.kyiv": "123456789012345",
-    };
+    // ---------- реклама: оголошення з ads.js (збирає клітинка 11 у Colab) + посилання на бібліотеку реклами Meta ----------
+    // API Meta віддає звичайну рекламу лише для ЄС, тому дані збирає Apify, а для ручного пошуку відкриваємо саму бібліотеку.
     const AD_ACCS = ["logocenter_zinchenko", "academy_insight", "skill.kyiv", "rozmovliajko_lviv", "logoworld.kyiv", "logosfera_ua", "school.govorika.ukr", "oleksandra.zinchenko", "valeria_kovalenko_", "zrostajko.uzhgorod", "erydit_inclusion", "shalapa_logoped", "marina_rudynska", "olha.tsys", "natalja_zhohlo", "mova_promova", "krok.vpered.kyiv", "logokids.kyiv", "little_heroes_club", "olif.space", "inclusive.center_avi"];
     const AD_KW = ["логопед", "логопедичний центр", "корекційний центр", "запуск мовлення", "затримка мовлення", "нейропсихолог", "аутизм", "АВА терапія", "сенсорна інтеграція", "ерготерапія", "підготовка до школи", "дитячий психолог"];
     const adBase = "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=UA&media_type=all";
     const adKw = (q) => adBase + "&search_type=keyword_unordered&q=" + encodeURIComponent(q);
-    const adUrl = (a) => AD_PAGES[a] ? adBase + "&search_type=page&view_all_page_id=" + AD_PAGES[a] : adKw(a.replace(/[._]+/g, " ").trim());
+    const adOne = (a) => "https://www.facebook.com/ads/library/?id=" + a.id;
+    const AS = { f: "comp", s: "long", limit: 20, ads: null, tried: false, loaded: false };
+    const PLAT = { facebook: "Facebook", instagram: "Instagram", messenger: "Messenger", audience_network: "Audience Network", threads: "Threads" };
+    const daysTxt = (d) => d == null ? "" : d < 1 ? "з сьогодні" : d + " дн.";
+    function loadAds() {
+      return new Promise((res) => {
+        if (window.ADS_DATA) return res(window.ADS_DATA);
+        const s = document.createElement("script"); s.src = "ads.js?v=" + Math.floor(Date.now() / 36e5);
+        s.onload = () => res(window.ADS_DATA || null); s.onerror = () => res(null); document.head.append(s);
+      });
+    }
     function drawAds() {
-      if ($("ad-accs").childElementCount) return;
-      const nId = AD_ACCS.filter((a) => AD_PAGES[a]).length;
-      $("ad-note").textContent = nId === AD_ACCS.length ? "Уся реклама кожного акаунта, яка крутиться зараз." : "Без ID сторінки шукаємо за назвою акаунта, тож можуть трапитись чужі оголошення або не знайтися нічого. Як додати ID — у пункті «На що дивитись».";
+      if (!$("ad-accs").childElementCount) adStatic();
+      if (!AS.tried) {
+        AS.tried = true;
+        $("ad-hero").replaceChildren(...[0, 1, 2].map(() => { const c = el("div", "card"); c.append(sk("60%", 12), sk("50%", 26)); c.children[1].style.marginTop = "12px"; return c; }));
+        $("ad-list").replaceChildren(...[0, 1, 2].map(() => { const c = el("div", "adc"); c.append(sk("76px", 76, "10px"), el("div")); c.lastChild.append(sk("50%", 14), sk("95%", 10), sk("80%", 10)); return c; }));
+        loadAds().then((d) => { AS.ads = d; AS.loaded = true; if (S.tab === "ad") adList(); });
+        return;
+      }
+      if (AS.loaded) adList();
+    }
+    function adList() {
+      const d = AS.ads, list = $("ad-list");
+      if (!d || !d.ads || !d.ads.length) {
+        $("ad-hero").replaceChildren(); $("ad-f").replaceChildren(); $("ad-s").replaceChildren(); $("ad-more").hidden = true;
+        list.replaceChildren(emptyBox("Оголошень ще немає", "Їх збирає клітинка «11. Реклама конкурентов» у Colab: запустіть її, і за 1–2 хвилини після завершення реклама з’явиться тут. Поки можна шукати вручну в блоці нижче."));
+        return;
+      }
+      const A = d.ads.map((a) => ({ ...a, comp: !!a.acc && !a.us }));
+      $("ad-upd").textContent = "Активна реклама у Facebook та Instagram в Україні. Зібрано " + dmy(d.updated) + ". Тап — повний текст і «В ідеї».";
+      const pages = new Set(A.map((a) => a.page_id || a.page)), comp = A.filter((a) => a.comp), long = A.filter((a) => (a.days || 0) >= 30);
+      const tileH = (t, v, s) => { const c = el("div", "card"); c.append(el("div", "sub", t), el("div", "big", v), el("div", "sub", s)); c.children[1].style.marginTop = "6px"; return c; };
+      $("ad-hero").replaceChildren(
+        tileH("Оголошень", nf.format(A.length), nf.format(pages.size) + " рекламодавців"),
+        tileH("У конкурентів", nf.format(comp.length), nf.format(new Set(comp.map((a) => a.acc)).size) + " акаунтів"),
+        tileH("Крутяться 30+ днів", nf.format(long.length), "ймовірно, окупаються"));
+      const F = [["comp", "Конкуренти", (a) => a.comp], ["all", "Уся ніша", () => true], ["us", "Ми", (a) => a.us]].filter((f) => f[0] !== "us" || A.some(f[2]));
+      if (!A.some((a) => a.comp) && AS.f === "comp") AS.f = "all";
+      const chip = (box, arr, key) => box.replaceChildren(...arr.map(([k, l]) => { const c = el("button", "chip", l); c.setAttribute("aria-pressed", AS[key] === k); c.onclick = () => { AS[key] = k; AS.limit = 20; adList(); }; return c; }));
+      chip($("ad-f"), F, "f");
+      chip($("ad-s"), [["long", "Найдовше крутяться"], ["new", "Нові"], ["var", "Найбільше варіантів"]], "s");
+      const flt = F.find((f) => f[0] === AS.f)[2];
+      const sorter = { long: (a, b) => (b.days || 0) - (a.days || 0), new: (a, b) => (a.days || 0) - (b.days || 0), var: (a, b) => (b.n || 1) - (a.n || 1) || (b.days || 0) - (a.days || 0) }[AS.s];
+      const rs = A.filter(flt).sort(sorter);
+      if (!rs.length) { list.replaceChildren(emptyBox(AS.f === "comp" ? "У конкурентів зараз реклами не знайдено" : "Нічого не знайдено", AS.f === "comp" ? "Або реклама не крутиться, або в клітинці 11 не вказані їхні сторінки Facebook. Подивіться «Уся ніша»." : "", [["Уся ніша", () => { AS.f = "all"; adList(); }]])); $("ad-more").hidden = true; return; }
+      list.replaceChildren(...rs.slice(0, AS.limit).map((a) => {
+        const c = el("button", "adc"), th = el("span", "th" + (a.fmt === "VIDEO" ? " vid" : "")); if (a.thumb) th.style.backgroundImage = `url("${a.thumb}")`;
+        const m = el("div"); m.style.minWidth = "0";
+        m.append(el("div", "pg", a.page || "Без назви"), el("div", "tx", a.title && a.text ? a.title + " · " + a.text : a.text || a.title || "Без тексту"));
+        const tags = el("div", "tags");
+        if (a.days != null) tags.append(el("span", "tag" + (a.days >= 30 ? " hot" : ""), daysTxt(a.days)));
+        if ((a.n || 1) > 1) tags.append(el("span", "tag", a.n + " варіант" + (a.n < 5 ? "и" : "ів")));
+        if (a.us) tags.append(el("span", "tag us", "ми")); else if (a.acc) tags.append(el("span", "tag", "@" + a.acc));
+        m.append(tags); c.append(th, m); c.onclick = () => adSheet(a); return c;
+      }));
+      $("ad-more").hidden = rs.length <= AS.limit;
+      $("ad-more").onclick = () => { AS.limit += 20; adList(); };
+      grow(list);
+    }
+    function adSheet(a) {
+      const hd = el("div", "hd"), cov = el("div", "cov sq"); if (a.thumb) cov.style.backgroundImage = `url("${a.thumb}")`;
+      const info = el("div"); info.append(el("h2", null, a.page || "Без назви"));
+      info.firstChild.style.marginTop = "0";
+      if (a.start) info.append(el("div", "sub", "Активна з " + dmy(a.start) + (a.days != null ? " · " + daysTxt(a.days) : "")));
+      if (a.plat && a.plat.length) info.append(el("div", "sub", a.plat.map((p) => PLAT[p] || p).join(", ")));
+      hd.append(cov, info);
+      const kv = el("dl", "kv");
+      for (const [k, v] of [["Заголовок", a.title], ["Кнопка", a.cta], ["Формат", { VIDEO: "відео", IMAGE: "картинка", CAROUSEL: "карусель", DCO: "автокомбінації", DPA: "каталог" }[a.fmt] || a.fmt], ["Варіанти", (a.n || 1) > 1 ? a.n + " з тим самим текстом — тестують креативи" : ""], ["Акаунт", a.us ? "ми" : a.acc ? "@" + a.acc : ""], ["Знайдено за", (a.kw || []).join(", ")], ["Веде на", a.link]])
+        if (v) kv.append(el("dt", null, k), el("dd", null, v));
+      const btns = el("div", "btns"), go = el("button", "btn"); go.append(ico("ext"), document.createTextNode("У бібліотеці")); go.onclick = () => open(adOne(a));
+      const idea = el("button", "btn p"); idea.append(ico("idea"), document.createTextNode("В ідеї"));
+      idea.onclick = async () => {
+        idea.disabled = true; idea.lastChild.textContent = "Додаю…";
+        try { await TG.api("add", { idea: { id: "ad-" + a.id, code: "", title: ("Реклама " + (a.page || "") + ": " + (a.title || a.text || "")).slice(0, 160), note: a.text || "", status: "idea", url: adOne(a), at: new Date().toISOString() } }); idea.lastChild.textContent = "Додано в ідеї"; }
+        catch (e) { idea.disabled = false; idea.lastChild.textContent = "Не вдалося, ще раз"; }
+      };
+      btns.append(idea, go);
+      sheet([hd, kv, el("div", "cap", a.text || "Без тексту"), btns]);
+    }
+    function adStatic() {
       $("ad-accs").replaceChildren(...AD_ACCS.map((a) => {
         const b = el("button", "row"), m = el("div");
-        m.append(el("b", null, a === ZIN ? a + " (ми)" : a), el("div", "sub", [D.spheres[a], AD_PAGES[a] ? "" : "пошук за назвою"].filter(Boolean).join(" · ")));
+        m.append(el("b", null, a === ZIN ? a + " (ми)" : a), el("div", "sub", [D.spheres[a], "пошук за назвою"].filter(Boolean).join(" · ")));
         const go = el("span", "sub"); go.append(ico("ext"));
-        b.append(m, go); b.onclick = () => open(adUrl(a)); return b;
+        b.append(m, go); b.onclick = () => open(adKw(a.replace(/[._]+/g, " ").trim())); return b;
       }));
       $("ad-kw").replaceChildren(...AD_KW.map((k) => { const c = el("button", "chip", k); c.onclick = () => open(adKw(k)); return c; }));
       $("ad-sbox").prepend(ico("search"));
       $("ad-q").onkeydown = (e) => { if (e.key === "Enter" && e.target.value.trim()) { open(adKw(e.target.value.trim())); e.target.blur(); } };
       $("ad-tips").replaceChildren(...[
-        ["clock", "«Активна з…» — дата старту. Реклама, що крутиться місяць і довше, найімовірніше окупається: її варто розібрати першою."],
-        ["target", "Кілька оголошень з однаковим текстом і різними відео — конкурент тестує хуки. Те, що лишилось через 2–3 тижні, і є переможцем."],
-        ["idea", "Сильну рекламу конкурента зручно занести в «Банк ідей» вручну: ідея, хук, посилання на оголошення."],
-        ["pin", "Щоб бачити саме рекламу акаунта: знайдіть його в бібліотеці через поле «Рекламодавець», відкрийте сторінку і скопіюйте число після view_all_page_id= з адреси. Надішліть ці числа в чат — я впишу їх у дашборд."],
+        ["clock", "Скільки днів крутиться. Реклама, що йде місяць і довше, найімовірніше окупається: її варто розібрати першою."],
+        ["target", "Кілька варіантів з однаковим текстом — конкурент тестує відео чи картинки. Те, що лишилось через 2–3 тижні, і є переможцем."],
+        ["idea", "Сильне оголошення можна одним тапом занести в «Банк ідей»: текст і посилання збережуться."],
+        ["pin", "Якщо чиясь реклама не підтягується, впишіть посилання на сторінку Facebook цього конкурента в поле COMPETITOR_PAGES у клітинці 11 у Colab."],
       ].map(([i, t]) => { const li = el("li"); const s = el("span", "ic"); s.append(ico(i)); li.append(s, el("div", null, t)); return li; }));
     }
 

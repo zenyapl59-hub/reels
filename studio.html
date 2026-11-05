@@ -1,0 +1,1164 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Reels: студія</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500;600&display=swap">
+<style>
+/* ---------- палітра: два акценти (ринок і ми) + нейтральні ---------- */
+:root {
+  --bg: #f4f6f8; --panel: #ffffff; --ink: #18202b; --muted: #5d6877; --line: #e1e6ec; --soft: #eef2f5; --sk: #e3e8ee; --sk-hi: #f3f6f8;
+  --accent: #1f6f78; --accent-ink: #ffffff; --accent-soft: #e2f0f1;
+  --us: #c2621a; --us-soft: #fbeadc; --c3: #7d8a99;
+  --warn-soft: #fbefd9; --warn-ink: #7a4b00; --good: #2e7d4f; --bad: #b3261e;
+  --shadow: 0 8px 28px rgba(16, 24, 40, .14);
+  --display: "Unbounded", "Onest", system-ui, sans-serif; --body: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r: 16px; --navw: 232px; --ease: cubic-bezier(.2, .8, .2, 1);
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #11161c; --panel: #19212a; --ink: #e8edf2; --muted: #9aa7b6; --line: #2a3542; --soft: #222c37; --sk: #222c37; --sk-hi: #2e3a48;
+  --accent: #5fb7bf; --accent-ink: #0d1a1c; --accent-soft: #1b3236;
+  --us: #f0a060; --us-soft: #3a2a1c; --c3: #8d9aaa;
+  --warn-soft: #3a2c12; --warn-ink: #f2c879; --good: #6cc28f; --bad: #f08a80;
+  --shadow: 0 8px 28px rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); -webkit-tap-highlight-color: transparent; }
+body.lock-scroll { overflow: hidden; }
+.locked .shell { visibility: hidden; }
+a { color: var(--accent); }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* ---------- каркас і бокове меню ---------- */
+.shell { display: grid; grid-template-columns: var(--navw) minmax(0, 1fr); min-height: 100vh; transition: grid-template-columns .3s var(--ease); }
+body.mini { --navw: 76px; }
+.nav { position: sticky; top: 0; height: 100vh; overflow: hidden; background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; padding: 16px 12px; }
+.brand { display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 8px; margin-bottom: 12px; white-space: nowrap; }
+.logo { width: 36px; height: 36px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; flex: none; font: 600 14px var(--display); }
+.brand b { font: 600 14px/1.2 var(--display); }
+.item { display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: none; color: var(--muted); font-weight: 500; text-decoration: none; white-space: nowrap; width: 100%; text-align: left; transition: background .2s, color .2s; }
+.item:hover { background: var(--soft); color: var(--ink); }
+.item[aria-current="page"] { background: var(--accent-soft); color: var(--ink); }
+.item[aria-current="page"] .ico { color: var(--accent); }
+.lbl, .brand b { transition: opacity .2s; }
+.nav .sep { height: 1px; background: var(--line); margin: 8px 6px; }
+.nav .spacer { flex: 1; }
+.collapse .ico { transition: transform .3s var(--ease); }
+body.mini .brand b { opacity: 0; pointer-events: none; }
+/* згорнуте меню: іконка + короткий підпис під нею */
+body.mini .item { flex-direction: column; justify-content: center; gap: 2px; height: 56px; padding: 0 2px; text-align: center; }
+body.mini .item .lbl { font-size: 10px; line-height: 1.1; white-space: normal; }
+body.mini .collapse .ico { transform: rotate(180deg); }
+.scrim { display: none; }
+.menu-btn { display: none; width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); place-items: center; flex: none; }
+@media (max-width: 1023px) and (min-width: 640px) {
+  body { --navw: 76px; }
+  .brand b { opacity: 0; pointer-events: none; }
+  .item { flex-direction: column; justify-content: center; gap: 2px; height: 56px; padding: 0 2px; text-align: center; }
+  .item .lbl { font-size: 10px; line-height: 1.1; white-space: normal; }
+  .collapse { display: none; }
+}
+@media (max-width: 639px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .nav { position: fixed; z-index: 40; left: 0; top: 0; bottom: 0; height: auto; width: 280px; transform: translateX(-102%); transition: transform .3s var(--ease); box-shadow: var(--shadow); padding-top: max(16px, env(safe-area-inset-top)); }
+  body.drawer .nav { transform: none; }
+  .scrim { display: block; position: fixed; inset: 0; z-index: 39; background: rgba(0, 0, 0, .4); opacity: 0; pointer-events: none; transition: opacity .3s; }
+  body.drawer .scrim { opacity: 1; pointer-events: auto; }
+  .collapse { display: none; }
+  .menu-btn { display: grid; }
+  body.mini .brand b { opacity: 1; pointer-events: auto; }
+  body.mini .item { flex-direction: row; justify-content: flex-start; gap: 12px; height: 44px; padding: 0 14px; text-align: left; }
+  body.mini .item .lbl { font-size: 15px; white-space: nowrap; }
+}
+
+/* ---------- основна колонка ---------- */
+.app { width: 100%; max-width: 1040px; margin: 0 auto; padding: 16px 24px 64px; display: grid; gap: 16px; align-content: start; min-width: 0; }
+@media (max-width: 639px) { .app { padding: 12px max(16px, env(safe-area-inset-right)) 48px max(16px, env(safe-area-inset-left)); gap: 12px; } }
+.hdr { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.hdr .tt { min-width: 0; flex: 1; }
+h1 { font: 600 clamp(18px, 4.6vw, 24px)/1.2 var(--display); margin: 0; letter-spacing: -.01em; }
+.upd { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.hdr .to-ideas { flex: none; font-size: 13px; white-space: nowrap; }
+@media (max-width: 639px) { .hdr .to-ideas { display: none; } }
+.bar { position: sticky; top: 0; z-index: 10; background: var(--bg); margin: 0 -4px; padding: 8px 4px; display: grid; gap: 8px; transition: box-shadow .2s; }
+.bar.stuck { box-shadow: 0 1px 0 var(--line); }
+.bar[hidden] { display: none; }
+.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chips[hidden] { display: none; }
+.chip { flex: none; min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); font-size: 13px; font-weight: 500; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; transition: background .2s, color .2s, border-color .2s; }
+.chip:hover { border-color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip.f { background: var(--accent-soft); border-color: transparent; }
+.chip.f .ico { width: 14px; height: 14px; }
+section[data-p] { display: grid; gap: 12px; min-width: 0; animation: enter .35s var(--ease) both; }
+section[data-p][hidden] { display: none; }
+@keyframes enter { from { opacity: 0; transform: translateY(8px); } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; min-width: 0; }
+h2 { font-size: 17px; font-weight: 600; margin: 0; line-height: 1.3; }
+.note { color: var(--muted); font-size: 13px; margin: 4px 0 12px; }
+.pagenote { color: var(--muted); font-size: 13px; margin: 0; }
+
+/* ---------- головні цифри ---------- */
+.hero { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 639px) { .hero { gap: 8px; } .hero .card { padding: 12px; } }
+@media (max-width: 359px) { .hero { grid-template-columns: 1fr; } }
+.k { color: var(--muted); font-size: 12px; line-height: 1.3; }
+.big { font: 600 clamp(20px, 6vw, 28px)/1.15 var(--display); margin-top: 8px; font-variant-numeric: tabular-nums; }
+.big.sm { font: 600 15px/1.3 var(--body); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.sub { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.35; }
+.sub.up { color: var(--good); } .sub.down { color: var(--bad); }
+.takes { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+.takes li { display: grid; grid-template-columns: 32px 1fr; gap: 12px; align-items: start; font-size: 14px; animation: enter .4s var(--ease) both; }
+.takes .ic { width: 32px; height: 32px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+.takes .ic .ico { width: 18px; height: 18px; }
+
+/* ---------- стрічка рилсів ---------- */
+.strip { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+.strip.end { -webkit-mask-image: none; mask-image: none; }
+.strip.is-empty { display: block; -webkit-mask-image: none; mask-image: none; }
+.strip::-webkit-scrollbar { display: none; }
+.tile { flex: none; width: 132px; scroll-snap-align: start; border: 0; padding: 0; background: none; text-align: left; animation: enter .45s var(--ease) both; }
+.cover { width: 132px; height: 208px; border-radius: 12px; background: var(--soft) center/cover; position: relative; overflow: hidden; display: block; transition: transform .25s var(--ease), box-shadow .25s; }
+@media (hover: hover) { .tile:hover .cover { transform: translateY(-3px); box-shadow: var(--shadow); } }
+.cover .v { position: absolute; left: 6px; bottom: 6px; background: rgba(0, 0, 0, .64); color: #fff; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.cover .xx { position: absolute; right: 6px; top: 6px; background: var(--accent); color: var(--accent-ink); font-size: 12px; font-weight: 600; padding: 2px 6px; border-radius: 999px; }
+.tile .who { font-size: 12px; color: var(--muted); margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile .tp { font-size: 13px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* ---------- смуги ---------- */
+.rows { display: grid; gap: 4px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; padding: 10px 8px; margin: 0 -8px; border: 0; border-radius: 12px; background: none; text-align: left; width: calc(100% + 16px); transition: background .2s; }
+button.row:hover, .row.on { background: var(--soft); }
+.row .l { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .r { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.track { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--soft); overflow: hidden; position: relative; transition: height .2s var(--ease); }
+.row.on .track, button.row:hover .track { background: var(--panel); }
+@media (hover: hover) { button.row:hover .track { height: 10px; } button.row:hover .fill { filter: brightness(1.08); } }
+.fill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 4px; background: var(--accent); transition: width .75s var(--ease), filter .2s; }
+.row .mini { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+
+/* ---------- список рилсів ---------- */
+.search { position: relative; margin: 12px 0 8px; }
+.search .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); width: 18px; height: 18px; }
+input[type=search] { font: inherit; font-size: 15px; width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px 8px 38px; background: var(--panel); color: var(--ink); }
+.list .it { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 4px; border: 0; border-bottom: 1px solid var(--line); background: none; width: 100%; text-align: left; transition: background .2s; }
+.list .it:last-child { border-bottom: 0; }
+@media (hover: hover) { .list .it:hover { background: var(--soft); } }
+.th { width: 44px; height: 68px; border-radius: 8px; background: var(--soft) center/cover; }
+.list .a { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.list .a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list .b { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list .c { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; font-size: 14px; }
+.list .c small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+.ad { flex: none; font-size: 11px; font-weight: 500; padding: 1px 6px; border-radius: 999px; background: var(--warn-soft); color: var(--warn-ink); }
+.more { margin-top: 8px; width: 100%; min-height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); font-weight: 500; }
+
+/* ---------- акаунти ---------- */
+.accs { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.acc { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: var(--r); padding: 16px; animation: enter .4s var(--ease) both; transition: border-color .2s, box-shadow .2s, transform .2s var(--ease); }
+@media (hover: hover) { .acc:hover { box-shadow: var(--shadow); transform: translateY(-2px); } }
+.acc.us { border-color: var(--us); }
+.av { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-weight: 600; font-size: 17px; background: var(--accent-soft); color: var(--accent); }
+.av.us { background: var(--us-soft); color: var(--us); }
+.acc .n { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.stats div { font-size: 12px; color: var(--muted); }
+.stats b { display: block; font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.spark { display: block; width: 100%; height: 32px; margin-top: 8px; overflow: visible; }
+
+/* ---------- порівняння ---------- */
+.pick { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 479px) { .pick { grid-template-columns: 1fr; } }
+.pick label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.pick label span { display: flex; align-items: center; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
+select { font: inherit; font-size: 15px; width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; background: var(--panel); color: var(--ink); }
+.cmp { display: grid; gap: 16px; margin-top: 12px; }
+.cmp .lab { font-size: 13px; color: var(--muted); }
+.dbar { display: grid; grid-template-columns: minmax(0, 1fr) 72px; gap: 8px; align-items: center; margin-top: 6px; }
+.dbar .track { height: 10px; grid-column: auto; }
+.dbar .val { font-size: 13px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--muted); flex-wrap: wrap; margin-top: 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ---------- графік ---------- */
+.chart { position: relative; margin-top: 8px; touch-action: pan-y; }
+.chart svg { display: block; width: 100%; overflow: visible; }
+.chart .ax { font-size: 11px; fill: var(--muted); font-family: var(--body); }
+.chart .gl { stroke: var(--line); stroke-dasharray: 3 4; }
+.ln { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.1s var(--ease) forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.pt { opacity: 0; animation: fade .3s ease .9s forwards; transform-box: fill-box; transform-origin: center; transition: transform .2s var(--ease); }
+.pt.on { transform: scale(1.8); }
+@keyframes fade { to { opacity: 1; } }
+.guide { stroke: var(--muted); stroke-width: 1; opacity: 0; transition: opacity .15s; }
+.guide.on { opacity: .5; }
+.tip { position: absolute; top: 0; z-index: 3; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 8px 10px; font-size: 12px; min-width: 120px; opacity: 0; transform: translateY(4px); transition: opacity .15s, transform .15s; }
+.tip.on { opacity: 1; transform: none; }
+.tip b { display: block; margin-bottom: 4px; font-size: 12px; }
+.tip div { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+.tip div span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+
+/* ---------- заготовки й порожні стани ---------- */
+.sk { background: linear-gradient(90deg, var(--sk) 25%, var(--sk-hi) 37%, var(--sk) 63%); background-size: 400% 100%; animation: sk 1.4s ease infinite; border-radius: 8px; }
+@keyframes sk { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+.skl { height: 12px; margin-top: 8px; }
+.empty { display: grid; gap: 6px; justify-items: start; padding: 16px; border: 1px dashed var(--line); border-radius: 12px; background: var(--soft); margin-top: 4px; animation: enter .3s var(--ease) both; }
+.empty b { font-size: 14px; }
+.empty p { margin: 0; font-size: 13px; color: var(--muted); }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.btn { min-height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); font-weight: 500; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; transition: background .2s, border-color .2s; }
+.btn:hover { border-color: var(--muted); }
+.btn.sm { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.btn.p { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn[disabled] { opacity: .6; cursor: default; }
+.btn .ico { width: 18px; height: 18px; }
+
+/* ---------- нижній аркуш ---------- */
+.shade { position: fixed; inset: 0; background: rgba(0, 0, 0, .45); z-index: 50; opacity: 0; pointer-events: none; transition: opacity .25s; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 51; max-height: 88vh; overflow-y: auto; overscroll-behavior: contain; background: var(--panel); border-radius: 20px 20px 0 0; padding: 12px 16px calc(24px + env(safe-area-inset-bottom)); transform: translateY(105%); visibility: hidden; transition: transform .3s var(--ease), visibility 0s .3s; max-width: 720px; margin: 0 auto; }
+body.sheet-open .shade { opacity: 1; pointer-events: auto; }
+body.sheet-open .sheet { transform: none; visibility: visible; transition: transform .3s var(--ease); }
+.grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 12px; }
+.x { position: absolute; right: 12px; top: 10px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--soft); display: grid; place-items: center; }
+.x .ico { width: 18px; height: 18px; }
+.sheet .hd { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 16px; padding-right: 32px; }
+.sheet .cov { width: 112px; height: 196px; border-radius: 12px; background: var(--soft) center/cover; }
+.sheet .big { font-size: 22px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 14px; margin: 16px 0 0; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; }
+.cap { font-size: 14px; color: var(--muted); margin: 12px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); }
+.sheet h2 { margin-top: 16px; }
+
+/* ---------- тренди ---------- */
+.trend { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); animation: enter .4s var(--ease) both; }
+.trend:last-child { border-bottom: 0; }
+.trend .l { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trend .m { grid-column: 1; font-size: 12px; color: var(--muted); }
+.delta { grid-row: 1 / span 2; grid-column: 2; font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; padding: 4px 10px; border-radius: 999px; }
+.delta.up { color: var(--accent); background: var(--accent-soft); }
+.delta.down { color: var(--us); background: var(--us-soft); }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 759px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.sub2 { font-size: 13px; font-weight: 600; margin: 4px 0 4px; display: flex; align-items: center; gap: 6px; }
+.sub2 .ico { width: 16px; height: 16px; }
+/* ---------- карта ніш ---------- */
+.heatwrap { overflow-x: auto; margin: 0 -16px; padding: 0 16px; scrollbar-width: thin; }
+.heat { border-collapse: separate; border-spacing: 3px; font-size: 12px; }
+.heat th { font-weight: 500; color: var(--muted); }
+.heat thead th { height: 132px; vertical-align: bottom; padding: 0 0 4px; }
+.heat thead th span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; display: inline-block; max-height: 128px; overflow: hidden; text-overflow: ellipsis; }
+.heat thead th.us span { color: var(--us); font-weight: 600; }
+.heat tbody th { position: sticky; left: 0; z-index: 1; background: var(--panel); text-align: left; padding-right: 8px; min-width: 128px; max-width: 150px; white-space: normal; line-height: 1.2; color: var(--ink); }
+.heat td { padding: 0; }
+.cell { position: relative; width: 38px; height: 34px; border: 0; border-radius: 6px; background: var(--soft); overflow: hidden; display: grid; place-items: center; font-size: 11px; font-weight: 600; color: var(--ink); animation: enter .4s var(--ease) both; transition: transform .15s var(--ease); }
+.cell i { position: absolute; inset: 0; background: var(--accent); }
+.cell.us i { background: var(--us); }
+.cell b { position: relative; }
+.cell.hot b { color: var(--accent-ink); }
+.cell.us.hot b { color: #fff; }
+@media (hover: hover) { .cell:hover { transform: scale(1.08); } }
+.heatleg { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); margin-top: 8px; align-items: center; }
+.heatleg .scale { display: inline-flex; gap: 2px; }
+.heatleg .scale i { width: 16px; height: 10px; border-radius: 2px; background: var(--accent); }
+/* ---------- профіль акаунта ---------- */
+.pos { font-size: 14px; line-height: 1.55; margin: 12px 0 0; padding: 12px; border-radius: 12px; background: var(--soft); }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.fact { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+.fact .k { font-size: 12px; }
+.fact b { display: block; font-size: 15px; margin-top: 2px; overflow-wrap: anywhere; }
+.fact small { display: block; font-size: 12px; color: var(--muted); }
+.fact small.up { color: var(--accent); } .fact small.down { color: var(--us); }
+.stack { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--soft); margin-top: 8px; }
+.stack i { height: 100%; width: 0; transition: width .75s var(--ease); }
+.stackleg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); margin-top: 6px; }
+.stackleg span { display: inline-flex; align-items: center; gap: 5px; }
+.acc .pos1 { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; } .ln { stroke-dashoffset: 0; } .pt { opacity: 1; } }
+
+/* ---------- Студія ---------- */
+.grp { font: 600 12px/1.2 var(--body); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 8px 2px 8px; }
+.tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+@media (max-width: 639px) { .tools { grid-template-columns: 1fr 1fr; gap: 8px; } }
+.tool { text-align: left; display: grid; gap: 4px; align-content: start; padding: 14px; border-radius: var(--r); border: 1px solid var(--line); background: var(--panel); min-height: 104px; transition: border-color .2s, transform .2s var(--ease); animation: enter .3s var(--ease) both; }
+.tool:hover { border-color: var(--accent); transform: translateY(-1px); }
+.tool .ico { width: 24px; height: 24px; color: var(--accent); margin-bottom: 4px; }
+.tool b { font: 600 14px/1.25 var(--display); }
+.tool span { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+.tool.loc .ico { color: var(--us); }
+.form2 { display: grid; gap: 12px; }
+.form2 label { display: grid; gap: 6px; font-size: 13px; font-weight: 600; }
+.form2 label small { font-weight: 400; color: var(--muted); }
+.form2 input[type=text], .form2 textarea, .form2 select { font: inherit; font-size: 15px; width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--panel); color: var(--ink); }
+.form2 textarea { min-height: 96px; resize: vertical; line-height: 1.45; }
+.form2 textarea.big { min-height: 180px; }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; }
+.seg button { min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); font-size: 13px; font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.toolhead { display: flex; gap: 12px; align-items: flex-start; }
+.toolhead .ico { width: 28px; height: 28px; color: var(--accent); flex: none; margin-top: 2px; }
+.toolhead p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+.back { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; color: var(--accent); font-weight: 500; padding: 4px 0; min-height: 36px; }
+.back .ico { width: 18px; height: 18px; }
+.res { display: grid; gap: 12px; }
+.res h2, .card h2 { font: 600 15px/1.3 var(--display); margin: 0 0 10px; }
+.blk { position: relative; border: 1px solid var(--line); border-radius: 12px; padding: 12px 52px 12px 12px; background: var(--soft); white-space: pre-wrap; word-break: break-word; font-size: 14.5px; line-height: 1.5; margin-top: 8px; }
+.blk > .copy { position: absolute; right: 8px; top: 8px; }
+.meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.pill.bad { background: color-mix(in srgb, var(--bad) 14%, transparent); color: var(--bad); }
+button.pill { border: 0; cursor: pointer; }
+.chk { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; font-size: 13.5px; }
+.chk li { display: grid; grid-template-columns: 56px 1fr; gap: 8px; align-items: start; }
+.chk .st { font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 6px; text-align: center; }
+.st.PASS { background: var(--accent-soft); color: var(--accent); }
+.st.WARN { background: var(--warn-soft); color: var(--warn-ink); }
+.st.FAIL { background: color-mix(in srgb, var(--bad) 14%, transparent); color: var(--bad); }
+.hook { border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 6px; margin-top: 8px; background: var(--panel); }
+.hook.win { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.hook .top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.hook .scr { font: 600 13px/1.3 var(--display); background: var(--ink); color: var(--bg); padding: 4px 8px; border-radius: 6px; justify-self: start; }
+.hook .sp { font-size: 15px; }
+.hook .why { font-size: 12.5px; color: var(--muted); }
+.score { font: 600 18px/1 var(--display); min-width: 40px; }
+.bars { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.bars div { display: grid; grid-template-columns: 96px 1fr 28px; gap: 8px; align-items: center; }
+.bars i { height: 6px; border-radius: 3px; background: var(--soft); position: relative; overflow: hidden; }
+.bars i::after { content: ""; position: absolute; inset: 0; width: var(--w); background: var(--accent); border-radius: 3px; }
+.beats { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+.beats td, .beats th { border-top: 1px solid var(--line); padding: 8px 6px; vertical-align: top; text-align: left; }
+.beats th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; border-top: 0; }
+.beats .t { white-space: nowrap; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.beats .sc { font-weight: 600; }
+.beats tr.flag td { background: var(--warn-soft); }
+@media (max-width: 639px) { .beats thead { display: none; } .beats tr { display: grid; grid-template-columns: 84px 1fr; border-top: 1px solid var(--line); padding: 6px 0; } .beats td { border: 0; padding: 2px 4px; } .beats td.sh, .beats td.sc { grid-column: 2; } }
+.receipt { font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--soft); border-radius: 12px; padding: 12px; white-space: pre-wrap; margin-top: 8px; }
+.slides { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
+.slides img { width: 100%; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.fr { display: grid; grid-template-columns: 32px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.fr:first-child { border-top: 0; }
+.fr .n { width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 600; font-size: 13px; }
+.fr .k { font-size: 12px; color: var(--muted); }
+.daygrid { display: grid; gap: 8px; margin-top: 8px; }
+.day { display: grid; grid-template-columns: 52px 1fr; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.day .d { font: 600 14px/1.2 var(--display); }
+.day .d small { display: block; font: 12px var(--body); color: var(--muted); margin-top: 4px; }
+.day .h { font-weight: 600; margin: 4px 0; }
+.day .a { font-size: 13px; color: var(--muted); }
+.bucket { margin-top: 12px; }
+.bucket h3 { font-size: 13px; margin: 0 0 6px; display: flex; gap: 8px; align-items: center; }
+.cm { font-size: 13px; color: var(--muted); margin-top: 10px; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+.tbl td, .tbl th { padding: 6px; border-top: 1px solid var(--line); text-align: left; vertical-align: top; }
+.tbl th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; border-top: 0; }
+.tbl .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wrapx { overflow-x: auto; }
+.bigscore { font: 600 40px/1 var(--display); color: var(--accent); }
+.note2 { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+.warnbox { background: var(--warn-soft); color: var(--warn-ink); border-radius: 12px; padding: 10px 12px; font-size: 13.5px; margin-top: 8px; }
+.loadbox { display: grid; gap: 10px; }
+.flags { margin: 8px 0 0; padding-left: 18px; font-size: 13px; }
+.hidden { display: none !important; }
+.card h2:not(:first-child), .res .card > h2:not(:first-child) { margin-top: 18px; }
+.meta + h2, .blk + h2 { margin-top: 18px; }
+</style>
+</head>
+<body>
+<script src="tg.js"></script>
+<div class="shell">
+  <nav class="nav" id="nav" aria-label="Розділи">
+    <div class="brand"><span class="logo">R</span><b>Reels<br>студія</b></div>
+    <button class="item" data-t="home" data-ico="spark" aria-current="page"><span class="lbl">Студія</span></button>
+    <button class="item" data-t="hist" data-ico="clock"><span class="lbl">Історія</span></button>
+    <div class="sep"></div>
+    <a class="item" href="dashboard.html" data-ico="ov"><span class="lbl">Дашборд</span></a>
+    <a class="item" href="ideas.html" data-ico="idea"><span class="lbl">Банк ідей</span></a>
+    <a class="item" href="check.html" data-ico="scan"><span class="lbl">Перевірка</span></a>
+    <div class="spacer"></div>
+    <button class="item collapse" id="collapse" data-ico="chev" aria-label="Згорнути меню"><span class="lbl">Згорнути</span></button>
+  </nav>
+  <div class="scrim" id="scrim"></div>
+
+  <main class="app">
+    <header class="hdr">
+      <button class="menu-btn" id="menu" aria-label="Меню" data-ico="menu"></button>
+      <div class="tt"><h1 id="title">Студія</h1><div class="upd" id="upd">Сценарії, підписи, каруселі, плани й відповіді за перевіреними методами Instagram і стратегією центру</div></div>
+    </header>
+
+    <section data-p="home" id="home"></section>
+    <section data-p="tool" id="toolp" hidden></section>
+    <section data-p="hist" hidden>
+      <p class="pagenote">Останні результати Студії всієї команди. Тап — відкрити.</p>
+      <div class="card"><div class="list hist" id="hist"></div></div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+  const NS = "http://www.w3.org/2000/svg";
+  const ICON = {
+    spark: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
+    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    ov: '<path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z"/>',
+    idea: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2v.2h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
+    scan: '<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M10 9.2v5.6l4.6-2.8z"/>',
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    chev: '<path d="m15 6-6 6 6 6"/>',
+    check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+    copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
+    reel: '<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M10 9v6l5-3z"/>',
+    text: '<path d="M5 6h14M5 10h14M5 14h9M5 18h6"/>',
+    slides: '<rect x="3" y="6" width="12" height="14" rx="2"/><path d="M18 8v10M21 10v6"/>',
+    story: '<circle cx="12" cy="12" r="8.5" stroke-dasharray="4 2.5"/><path d="M12 8v8M8 12h8"/>',
+    cal: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+    chat: '<path d="M5 5h14v10H9l-4 4z"/>',
+    dm: '<path d="M4 12 20 4l-5 16-3-7z"/><path d="m12 13 8-9"/>',
+    pen: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-5.5 8-5.5s6.5 1.5 8 5.5"/>',
+    chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    cut: '<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8 7.5 20 18M8 16.5 20 6"/>',
+    fire: '<path d="M12 21c4 0 7-2.8 7-6.8 0-3.6-2.6-5.7-4-8.2-.5 2-1.6 3-3 3.5C12.5 7 11 4.5 8.5 3c.3 3-3.5 5.5-3.5 10.5C5 18 8 21 12 21z"/>',
+    human: '<path d="M7 11V7a5 5 0 0 1 10 0v4"/><path d="M5 11h14v3a7 7 0 0 1-14 0z"/>',
+    mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  };
+  const ico = (k) => { const s = document.createElementNS(NS, "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("class", "ico"); s.setAttribute("aria-hidden", "true"); s.innerHTML = ICON[k] || ICON.spark; return s; };
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const tg = window.TG && TG.tg;
+  const nf = new Intl.NumberFormat("uk-UA");
+  const ZIN = "logocenter_zinchenko";
+  const qq = (t) => { t = String(t || "").trim(); return /^[«"„]/.test(t) ? t : "«" + t + "»"; };
+
+  document.querySelectorAll("[data-ico]").forEach((n) => n.prepend(ico(n.dataset.ico)));
+  try { if (localStorage.getItem("navMini") === "1") document.body.classList.add("mini"); } catch (e) {}
+  $("collapse").onclick = () => { const m = document.body.classList.toggle("mini"); try { localStorage.setItem("navMini", m ? "1" : "0"); } catch (e) {} };
+  const drawer = (on) => { document.body.classList.toggle("drawer", on); syncBack(); };
+  $("menu").onclick = () => drawer(true); $("scrim").onclick = () => drawer(false);
+  document.querySelectorAll(".item").forEach((b) => b.setAttribute("title", b.textContent.trim()));
+  let toastT;
+  const toast = (msg, err) => { const t = $("toast"); t.textContent = msg; t.classList.toggle("err", !!err); t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), err ? 5000 : 2200); };
+  const copyText = async (text) => { try { await navigator.clipboard.writeText(text); toast("Скопійовано"); } catch (e) { const ta = el("textarea"); ta.value = text; document.body.append(ta); ta.select(); try { document.execCommand("copy"); toast("Скопійовано"); } catch (x) { toast("Не вдалося скопіювати", true); } ta.remove(); } };
+  const copyBtn = (get) => { const b = el("button", "copy"); b.append(ico("copy")); b.setAttribute("aria-label", "Скопіювати"); b.onclick = () => copyText(typeof get === "function" ? get() : get); return b; };
+  const btn = (label, cls, icon, fn) => { const b = el("button", "btn " + (cls || "")); if (icon) b.append(ico(icon)); b.append(document.createTextNode(label)); if (fn) b.onclick = fn; return b; };
+  const card = (title) => { const c = el("div", "card"); if (title) c.append(el("h2", null, title)); return c; };
+
+  // =====================================================================
+  // ЛОКАЛЬНІ ПЕРЕВІРКИ (без ШІ): олюднення, оцінка хука, таймінг, підпис
+  // =====================================================================
+  const H = (() => {
+    const INVIS = /[​-‏⁠-⁤﻿­᠎‪-‮⁦-⁩؜]|[\u{E0000}-\u{E007F}]/gu;
+    const SPACES = /[     　]/g;
+    // штамп → заміна ("" — прибрати)
+    const SLOP = [
+      ["давайте розберемося", "ось що відбувається"], ["давайте розберемо", "розберемо"], ["давайте поговоримо про", "про"], ["давайте", ""],
+      ["у сучасному світі", ""], ["в сучасному світі", ""], ["в наш час", "зараз"], ["на сьогоднішній день", "зараз"], ["на сьогодні", "зараз"],
+      ["варто зазначити, що", ""], ["варто зазначити", ""], ["важливо зазначити, що", ""], ["важливо розуміти, що", ""], ["важливо пам'ятати, що", ""], ["важливо пам’ятати, що", ""],
+      ["слід зазначити", ""], ["необхідно розуміти", "треба знати"], ["як відомо", ""], ["безумовно", ""], ["без сумніву", ""],
+      ["зануримося", "подивимось"], ["поринемо", "подивимось"], ["розкриємо секрети", "покажемо"], ["секрет успіху", "що працює"], ["магія", "те, що працює"],
+      ["ключовий", "головний"], ["ключова", "головна"], ["ключове", "головне"], ["ключові", "головні"],
+      ["унікальний", "свій"], ["унікальна", "своя"], ["унікальні", "свої"], ["інноваційний", "новий"], ["інноваційні", "нові"],
+      ["комплексний підхід", "кілька фахівців разом"], ["індивідуальний підхід", "заняття під вашу дитину"], ["команда професіоналів", "наші фахівці"], ["висококваліфіковані фахівці", "досвідчені фахівці"],
+      ["ефективний", "дієвий"], ["ефективні", "дієві"], ["ефективно", "дієво"], ["максимально", "дуже"], ["якісний", "добрий"], ["гармонійний розвиток", "розвиток"], ["гармонійно", ""],
+      ["в цьому відео", ""], ["у цьому відео", ""], ["у цьому пості", ""], ["в цьому пості", ""], ["сьогодні поговоримо про", "про"], ["сьогодні я розповім", ""], ["сьогодні розповім", ""],
+      ["ставте лайк", ""], ["ставте вподобайку", ""], ["підписуйтесь, щоб не пропустити", ""], ["підписуйтесь", ""], ["позначте подругу", "перешліть подрузі"], ["позначте ту", "перешліть тій"],
+      ["дивіться до кінця", ""], ["зберігай, щоб не загубити", "збережіть"], ["стоп скрол", ""], ["зупинись", ""], ["лайфхак", "порада"], ["лайфхаки", "поради"], ["інсайт", "думка"], ["інсайти", "думки"],
+      ["є запорукою", "допомагає"], ["відіграє важливу роль", "важить"], ["відіграє ключову роль", "важить"], ["грає важливу роль", "важить"], ["являється", "є"], ["являє собою", "це"],
+      ["приймати участь", "брати участь"], ["приймає участь", "бере участь"], ["в якості", "як"], ["на протязі", "протягом"], ["слідуючий", "наступний"], ["співпадає", "збігається"],
+      ["у підсумку", "отже"], ["підсумовуючи", ""], ["таким чином", "тож"], ["крім того", "ще"], ["більш того", "ба більше"], ["окрім цього", "ще"],
+      ["неймовірний", "сильний"], ["неймовірно", "дуже"], ["надзвичайно", "дуже"], ["бездоганно", "добре"], ["потужний", "сильний"],
+    ];
+    const esc = (s) => s.replace(/[.*+?^${}()|[\]\\’']/g, (c) => (c === "'" || c === "’" ? "['’]" : "\\" + c));
+    const SLOP_RE = SLOP.map(([w, r]) => [new RegExp("(^|[^\\p{L}])(" + esc(w) + ")(?=[^\\p{L}]|$)", "giu"), r, w]);
+    const STRUCT = [
+      [/не (просто|лише|тільки)[^.!?\n]{1,60},\s*а\s/iu, "«не просто X, а Y» — штамп ШІ, скажіть прямо"],
+      [/не лише[^.!?\n]{1,60}а й/iu, "«не лише…, а й…» — штамп"],
+      [/(^|\n)\s*[\p{L}-]{2,20}\?\s*(\n|$)/u, "риторичне питання з одного слова («Результат?»)"],
+      [/(у|в) (цьому|цім) (відео|ролику)|сьогодні (поговоримо|розповім|розкажу)|привіт,? (я|мене|друзі|мами)/iu, "вступ замість початку: починайте з суті"],
+      [/(^|\n)\s*(\p{Extended_Pictographic}).*(\n\s*\p{Extended_Pictographic}.*){2,}/u, "список з емодзі-маркерів"],
+      [/(\b[A-ZА-ЯІЇЄҐ]{2,}\b[\s,!]+){3,}/u, "капслок на 3+ слова поспіль"],
+      [/(#[\p{L}\d_]+\s*){6,}/u, "стіна хештегів (більше 5)"],
+      [/став(те|ь) лайк|підпису(йся|йтесь)|познач(те|ь) (подругу|друга|ту)|дивіться до кінця|подвійний тап/iu, "рефлекторний заклик-приманка"],
+      [/([\p{L}]+), ([\p{L}]+) (і|та|й) ([\p{L}]+)[^.!?]*[.!?][^]*?([\p{L}]+), ([\p{L}]+) (і|та|й) ([\p{L}]+)/u, "кілька трійок «X, Y і Z» — ритм ШІ"],
+    ];
+    function clean(t) {
+      const ch = [];
+      let s = String(t || "");
+      const ni = (s.match(INVIS) || []).length; if (ni) ch.push("невидимих символів: " + ni);
+      s = s.replace(INVIS, "").replace(SPACES, " ");
+      const nd = (s.match(/—/g) || []).length; if (nd) ch.push("довгих тире: " + nd);
+      s = s.replace(/\s*—\s*/g, ", ").replace(/(\p{L})\s*–\s*(\p{L})/gu, "$1 - $2").replace(/…/g, "...").replace(/[“”„]/g, '"').replace(/^\s*[•●▪]\s*/gm, "- ");
+      s = s.replace(/,\s*([,.!?:;])/g, "$1").replace(/(^|\n)\s*,\s*/g, "$1").replace(/:\s*,/g, ":");
+      let ns = 0;
+      for (const [re, r] of SLOP_RE) s = s.replace(re, (m, pre, w) => { ns++; if (!r) return pre; const rr = /^\p{Lu}/u.test(w) ? r.charAt(0).toUpperCase() + r.slice(1) : r; return pre + rr; });
+      if (ns) ch.push("штампів замінено: " + ns);
+      s = s.replace(/[ \t]{2,}/g, " ").replace(/ +([,.!?:;])/g, "$1").replace(/(^|[.!?]\s+|\n)(\p{Ll})/gu, (m, a, b) => a + b.toUpperCase()).replace(/,\s*\./g, ".").replace(/([!?])\s*\./g, "$1").replace(/\s+([!?.])/g, "$1").trim();
+      return { text: s, changes: ch };
+    }
+    const words = (s) => (String(s).match(/[\p{L}\d][\p{L}\d'’-]*/gu) || []);
+    const sentences = (s) => String(s).split(/(?<=[.!?…])\s+|\n+/).map((x) => x.trim()).filter((x) => words(x).length);
+    function flags(t) { return STRUCT.filter(([re]) => re.test(t)).map(([, m]) => m); }
+    function detect(t) {
+      const s = String(t || ""), w = words(s), nw = Math.max(1, w.length), sen = sentences(s);
+      const lens = sen.map((x) => words(x).length), mean = lens.reduce((a, b) => a + b, 0) / Math.max(1, lens.length);
+      const sd = Math.sqrt(lens.reduce((a, b) => a + (b - mean) ** 2, 0) / Math.max(1, lens.length));
+      const cv = mean ? sd / mean : 0;
+      const burst = lens.length < 3 ? 70 : Math.min(100, Math.round(25 + cv * 125));
+      const spec = (s.match(/\d+|[А-ЯІЇЄҐ][\p{Ll}’']{2,}(?=\s)|«[^»]+»|"[^"]+"|@\w+/gu) || []).length;
+      const specificity = Math.min(100, Math.round(20 + (spec / nw) * 100 * 9));
+      let slopHits = 0; for (const [re] of SLOP_RE) { re.lastIndex = 0; slopHits += (s.match(re) || []).length; }
+      const slop = Math.max(0, Math.round(100 - (slopHits / nw) * 100 * 25));
+      const fp = (s.match(INVIS) || []).length * 3 + (s.match(/—/g) || []).length + (s.match(/[“”„]/g) || []).length;
+      const finger = Math.max(0, Math.round(100 - (fp / Math.max(1, s.length)) * 1000 * 12));
+      const fl = flags(s), person = /(^|[^\p{L}])(ви|вас|вам|ваш\p{L}*|ти|тебе|твій|твоя|я|ми|нас|наш\p{L}*)(?=[^\p{L}]|$)/iu.test(s);
+      const voice = Math.max(0, Math.min(100, (person ? 85 : 55) + (/[?!]/.test(s) ? 10 : 0) - fl.length * 15));
+      const checks = [["Ритм речень", burst], ["Конкретика", specificity], ["Штампи", slop], ["Відбитки ШІ", finger], ["Живий голос", voice]];
+      const sc = checks.map((c) => c[1]), avg = sc.reduce((a, b) => a + b, 0) / sc.length, min = Math.min(...sc);
+      const overall = Math.round(avg * 0.6 + min * 0.4);
+      return { overall, checks, flags: fl, pass: overall >= 70 && min >= 55, verdict: overall >= 70 && min >= 55 ? "ЖИВО" : overall >= 50 ? "ПЕРЕГЛЯНУТИ" : "ЗВУЧИТЬ ЯК ШІ" };
+    }
+    return { clean, detect, flags, words, sentences };
+  })();
+
+  // Оцінка хука (як hookscore: довжина, конкретика, ставка, суть на початку, звертання)
+  function hookScore(text) {
+    const s = String(text || ""), w = H.words(s), n = w.length;
+    const len = n >= 5 && n <= 12 ? 100 : n < 5 ? (n >= 3 ? 75 : 50) : n <= 16 ? 70 : 40;
+    const specHits = (s.match(/\d+|\b(один|одна|два|дві|три|чотири|п['’]ять|шість|сім|десять|перш\p{L}*|друг\p{L}*|трет\p{L}*)\b|років|рок\p{L}*|хвилин|секунд|слів|раз\b|%/giu) || []).length;
+    const spec = specHits === 0 ? 15 : Math.min(100, 45 + specHits * 30);
+    const pain = /істерик|кусає|кусаєть|б['’]є|штовха|кричит|кричу|кричите|плаче|мовчит|не говорит|не каже|не чує|не слуха|не хоче|лінь|лінує|соромно|провин|страх|боїть|втом|помилк|пропуст|запізн|не встига|школ|садок|слів|«ні»|"ні"|не так|ніхто не|ніколи|стоп|не робіть|не кажіть|причин|ознак|чому/iu.test(s);
+    const stakes = pain ? 100 : 40;
+    const weak = /^(привіт|вітаю|доброго|сьогодні|у цьому|в цьому|я логопед|мене звати|давайте|хочу розповісти|друзі|дорогі|отже|ну що|всім)/iu.test(s.trim());
+    const head = w.slice(0, 3).join(" ");
+    const front = weak ? 30 : /\d|істер|кус|мовч|не |ніхто|стоп|чому|«|"/iu.test(head) ? 100 : 70;
+    const you = /(^|[^\p{L}])(ви|вас|вам|ваш\p{L}*|ти|тебе|твій|твоя|мам\p{L}*)(?=[^\p{L}]|$)/iu.test(s) ? 100 : /(^|[^\p{L}])(я|ми|мене|нас)(?=[^\p{L}]|$)/iu.test(s) ? 75 : 55;
+    const parts = [["Довжина", len], ["Конкретика", spec], ["Біль мами", stakes], ["Суть з 1 слова", front], ["Звертання", you]];
+    const sc = parts.map((p) => p[1]), min = Math.min(...sc);
+    let overall = Math.round(sc.reduce((a, b) => a + b, 0) / sc.length); if (weak) overall = Math.min(overall, 45);
+    return { overall, parts, verdict: overall >= 70 && min >= 55 && !weak ? "СИЛЬНИЙ" : overall >= 50 ? "НОРМ" : "СЛАБКИЙ" };
+  }
+
+  // Таймінг бітів (як beats.py): 2,5 слова/с, біт ≤ 4 с, хук ≤ 3 с, петля
+  const WPS = 2.5;
+  function beatSheet(beats, hookLine, target) {
+    let t = 0; const rows = [], flags = [];
+    beats.forEach((b, i) => {
+      const nw = H.words(b.say || "").length, d = Math.max(nw ? nw / WPS + 0.3 : 1.5, 1);
+      rows.push({ i, from: t, to: t + d, d, b, flag: (i === 0 && d > 3) || d > 4 });
+      t += d;
+    });
+    if (rows[0] && rows[0].d > 3) flags.push("Хук довший за 3 с (" + rows[0].d.toFixed(1) + " с). Скоротіть першу фразу.");
+    const long = rows.filter((r, i) => i > 0 && r.d > 4).map((r) => r.i + 1);
+    if (long.length) flags.push("Біт " + long.join(", ") + " довший за 4 с: розбийте на два або змініть план посередині.");
+    for (let i = 0; i + 2 < rows.length; i++) { const z = rows.slice(i, i + 3); if (z.every((r) => !/\d/.test(r.b.say || "") && !(r.b.screen || "").trim())) { flags.push("Біти " + (i + 1) + "–" + (i + 3) + " без цифр і тексту на екрані: глядач може піти."); break; } }
+    const stem = (x) => H.words(x).filter((w) => w.length > 3).map((w) => w.toLowerCase().slice(0, 5));
+    const last = rows.length ? rows[rows.length - 1].b.say || "" : "", hs = new Set(stem(hookLine));
+    const loop = stem(last).some((w) => hs.has(w));
+    if (!loop) flags.push("Немає петлі: останній рядок не повторює слова з хука.");
+    if (target && Math.abs(t - target) > target * 0.25) flags.push("Довжина " + t.toFixed(0) + " с, а планували " + target + " с.");
+    if (t > 45) flags.push("Довше за 45 с: для наших мам досмотр падає, ріжте.");
+    return { rows, total: t, flags, loop };
+  }
+  const tm = (s) => { s = Math.round(s); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+
+  // Перевірка підпису (як caption.py)
+  function lintCaption(text, keywords) {
+    const s = String(text || ""), out = [], add = (k, st, m) => out.push({ k, st, m });
+    const first = s.split("\n")[0] || "", vis = s.slice(0, 125);
+    add("Довжина", s.length > 2200 ? "FAIL" : s.length > 1200 ? "WARN" : "PASS", s.length + " з 2200 символів" + (s.length > 1200 ? ": довгувато, 300–700 читають краще" : ""));
+    if (!first.trim()) add("Перший рядок", "FAIL", "підпис починається з порожнього рядка");
+    else if (/^\s*(#|\p{Extended_Pictographic})/u.test(first)) add("Перший рядок", "FAIL", "починається з хештегу чи емодзі");
+    else if (/^\s*(привіт|вітаю|доброго|дорогі|мами,? привіт)/iu.test(first)) add("Перший рядок", "FAIL", "починається з привітання");
+    else if (first.length > 125) add("Перший рядок", "WARN", "довший за 125 символів: обріжеться на «…ще» посеред думки");
+    else add("Перший рядок", "PASS", first.length + " символів, видно повністю");
+    if (s.length > 125 && /\p{L}$/u.test(vis) && /^\p{L}/u.test(s.slice(125))) add("Обрив", "WARN", "«…ще» ріже слово навпіл: перефразуйте перші 125 символів");
+    const tags = s.match(/#[\p{L}\d_]+/gu) || [];
+    const junk = tags.filter((t) => /^#(viral|fyp|foryou|explore|explorepage|reels|reel|рек|рекомендації|рекомендацii|хочуврек|тренд|тренди|instagood|top)$/iu.test(t));
+    add("Хештеги", tags.length > 5 ? "FAIL" : junk.length ? "WARN" : "PASS", tags.length > 5 ? tags.length + " шт., Instagram з 18.12.2025 дозволяє до 5" : junk.length ? "загальні мітки нічого не описують: " + junk.join(" ") : tags.length + " шт.");
+    if (tags.length && vis.includes("#")) add("Де хештеги", "WARN", "хештег у видимій частині, перенесіть униз");
+    add("Посилання", /https?:\/\/|www\.|\.com\b|\.ua\b/i.test(s) ? "WARN" : "PASS", /https?:\/\/|www\./i.test(s) ? "у підписі посилання не клікаються: біо, директ або перший коментар" : "немає");
+    const askRe = [/напиш(іть|и)[^.!?\n]{0,30}(коментар|слово|«|")|пиш(іть|и) у коментар|у коментар(ях|і)\s+(слово|«)/iu, /збереж(іть|и)/iu, /перешл(іть|и)|надішл(іть|и) (подрузі|тій|тому)/iu, /підпиш(іться|ись)/iu, /запиш(іться|ись)|записатися|запис у директ/iu, /напиш(іть|и) (нам )?(у|в) (директ|дірект|приват)/iu, /переход(ьте|ь) за посиланням|посилання в (шапці|біо|профілі)/iu];
+    const asks = askRe.filter((r) => r.test(s)).length;
+    add("Один заклик", asks === 1 ? "PASS" : "WARN", asks === 0 ? "немає заклику: вирішіть, для чого цей пост" : asks === 1 ? "один" : asks + " заклики: два заклики працюють як жоден");
+    const kw = s.match(/(?:слово|коментар\p{L}*)\s*[«"]?([A-ZА-ЯІЇЄҐ][A-ZА-ЯІЇЄҐ'’]{2,})/u);
+    if (/слово/iu.test(s) && !kw) add("Слово-заклик", "WARN", "слово для коментаря має бути одне, ВЕЛИКИМИ, без пробілів (СПОКІЙ, СЛОВА, ТЕСТ, ПРОГРАМА)");
+    const emo = (s.match(/\p{Extended_Pictographic}/gu) || []).length, dens = s.length ? (emo / s.length) * 100 : 0;
+    add("Емодзі", dens > 4 ? "WARN" : "PASS", emo + " шт." + (dens > 4 ? ": забагато, емодзі як розділові знаки, не прикраса" : ""));
+    if (/\S[^\n]{420,}/.test(s)) add("Абзаци", "WARN", "є абзац довший за ~420 символів: розбийте порожнім рядком");
+    const ks = (keywords || "").split(",").map((x) => x.trim()).filter(Boolean);
+    if (ks.length) { const miss = ks.filter((k) => !s.toLowerCase().includes(k.toLowerCase())); add("Пошукові слова", !miss.length ? "PASS" : miss.length < ks.length ? "WARN" : "FAIL", miss.length ? "немає в тексті: " + miss.join(", ") : "усі є в тексті"); }
+    const fails = out.filter((c) => c.st === "FAIL").length, warns = out.filter((c) => c.st === "WARN").length;
+    return { checks: out, fails, warns, verdict: fails ? "ПОТРІБНІ ПРАВКИ" : warns ? "МОЖНА, АЛЕ ГЛЯНЬТЕ" : "ГОТОВО" };
+  }
+
+  // =====================================================================
+  // ВІДЖЕТИ РЕЗУЛЬТАТУ
+  // =====================================================================
+  function checksList(list) { const ul = el("ul", "chk"); for (const c of list) { const li = el("li"); li.append(el("span", "st " + c.st, c.st === "PASS" ? "OK" : c.st === "WARN" ? "УВАГА" : "ПРАВКА"), el("span", null, c.k + ": " + c.m)); ul.append(li); } return ul; }
+  function bars(parts) { const b = el("div", "bars"); for (const [k, v] of parts) { const r = el("div"); const i = el("i"); i.style.setProperty("--w", v + "%"); r.append(el("span", null, k), i, el("span", null, String(v))); b.append(r); } return b; }
+  // Текстовий блок з копіюванням + бейдж «людяності» (і для підпису — перевірка підпису)
+  function textBlock(text, opts) {
+    opts = opts || {};
+    const wrap = el("div");
+    const b = el("div", "blk"); const body = el("span"); body.textContent = text || ""; b.append(body, copyBtn(() => body.textContent));
+    b.contentEditable = "false";
+    const meta = el("div", "meta"), detail = el("div", "hidden");
+    function refresh() {
+      meta.replaceChildren(); detail.replaceChildren();
+      const t = body.textContent;
+      const d = H.detect(t);
+      if (opts.noHuman) { detail.append(btn("Редагувати", "sm", "pen", () => { const on = body.contentEditable !== "true"; body.contentEditable = on ? "true" : "false"; if (on) body.focus(); })); const pp = el("button", "pill", "Редагувати"); pp.onclick = () => detail.classList.toggle("hidden"); meta.append(pp); return; }
+      const p = el("button", "pill " + (d.pass ? "ok" : d.overall >= 50 ? "warn" : "bad"), "Людяність " + d.overall + " · " + d.verdict);
+      p.onclick = () => detail.classList.toggle("hidden"); meta.append(p);
+      detail.append(bars(d.checks));
+      if (d.flags.length) { const ul = el("ul", "flags"); d.flags.forEach((f) => ul.append(el("li", null, f))); detail.append(el("p", "note2", "Перепишіть ці місця вручну:"), ul); }
+      const r = el("div", "btns");
+      r.append(btn("Очистити автоматично", "sm", "human", () => { const c = H.clean(body.textContent); body.textContent = c.text; refresh(); toast(c.changes.length ? c.changes.join(", ") : "Нічого прибирати"); }));
+      r.append(btn("Переписати з ШІ", "sm", "spark", async (e) => { const bt = e.currentTarget; bt.disabled = true; bt.lastChild.textContent = "Переписую…"; try { const j = await callStudio("human", "Текст:\n" + body.textContent + "\n\nПозначки:\n" + (d.flags.join("\n") || "немає"), "", "Олюднити"); body.textContent = j.result.text || body.textContent; refresh(); toast("Переписано"); } catch (x) { showErr(x); } bt.disabled = false; bt.lastChild.textContent = "Переписати з ШІ"; }));
+      r.append(btn("Редагувати", "sm", "pen", () => { const on = b.contentEditable !== "true"; b.contentEditable = on ? "true" : "false"; body.contentEditable = on ? "true" : "false"; if (on) body.focus(); else refresh(); }));
+      detail.append(r);
+      if (opts.caption) {
+        const L = lintCaption(t, opts.keywords);
+        const cp = el("button", "pill " + (L.fails ? "bad" : L.warns ? "warn" : "ok"), "Підпис: " + L.verdict);
+        const cd = el("div", "hidden"); cp.onclick = () => cd.classList.toggle("hidden");
+        cd.append(checksList(L.checks)); meta.append(cp); detail.before(cd);
+        const box = el("div", "receipt"); box.textContent = "ВИДНО ДО «…ще»:\n" + t.slice(0, 125) + (t.length > 125 ? "…" : "");
+        cd.append(box);
+      }
+      if (opts.extra) opts.extra(meta, t);
+    }
+    body.addEventListener("blur", () => { if (b.contentEditable === "true") refresh(); });
+    wrap.append(b, meta, detail); refresh();
+    wrap.getText = () => body.textContent;
+    return wrap;
+  }
+  const placeholders = (r, box) => { if (r && r.placeholders && r.placeholders.length) { const w = el("div", "warnbox"); w.textContent = "Заповніть самі (ШІ не вигадує факти): " + r.placeholders.join("; "); box.append(w); } };
+
+  // =====================================================================
+  // ДАНІ: дашборд (data.js) і дошка ідей
+  // =====================================================================
+  let dataP = null;
+  const loadData = () => dataP || (dataP = new Promise((res) => {
+    if (window.REELS_DATA) return res(window.REELS_DATA);
+    const s = document.createElement("script"); s.src = "data.js?v=" + Math.floor(Date.now() / 36e5); s.onload = () => res(window.REELS_DATA || null); s.onerror = () => res(null); document.head.append(s);
+  }));
+  const num = (v) => (v === "" || v == null ? null : Number(v));
+  function enrich(D) {
+    if (D._en) return D._en;
+    const now = Date.parse(D.last_reel || D.updated) || Date.now(), by = {};
+    const rows = D.rows.map((r) => ({ r, v: num(r.views) || 0, age: (now - Date.parse(r.date)) / 864e5, lr: num(r.like_rate), ad: r.promoted === "так" || (num(r.like_rate) != null && num(r.like_rate) < 0.4) }));
+    rows.forEach((o) => { if (o.age >= 7) (by[o.r.account] = by[o.r.account] || []).push(o.v); });
+    const med = (a) => { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : 0; };
+    const meds = {}; for (const k in by) meds[k] = med(by[k]);
+    rows.forEach((o) => { o.med = meds[o.r.account] || 0; o.x = o.med ? o.v / o.med : null; });
+    return (D._en = { rows, meds, our: meds[ZIN] || 2300 });
+  }
+  const first = (r) => (r.v_first || r.v_text || r.caption || "").replace(/\s+/g, " ").slice(0, 140);
+  async function marketContext() {
+    const D = await loadData(); if (!D) return "";
+    const E = enrich(D), our = E.our;
+    const hits = E.rows.filter((o) => o.r.account !== ZIN && !o.ad && o.age <= 120 && (o.v >= 3 * our || (o.x >= 3 && o.v >= our))).sort((a, b) => b.v - a.v).slice(0, 15);
+    const mine = E.rows.filter((o) => o.r.account === ZIN && o.age >= 7).sort((a, b) => b.v - a.v).slice(0, 5);
+    return "Наша медіана " + Math.round(our) + " переглядів.\nХІТИ КОНКУРЕНТІВ (органічні, останні 120 днів): \n" + hits.map((o) => "- @" + o.r.account + " · " + nf.format(o.v) + " (×" + (o.x || 0).toFixed(1) + ") · " + (o.r.topic || "") + " · " + (o.r.duration_s ? Math.round(o.r.duration_s) + " с · " : "") + "перші слова: «" + first(o.r) + "»").join("\n") +
+      "\nНАШІ НАЙКРАЩІ: \n" + mine.map((o) => "- " + nf.format(o.v) + " · " + (o.r.topic || "") + " · «" + first(o.r) + "»").join("\n");
+  }
+  async function ideasContext() {
+    try { const j = await TG.api("list"); const a = (j.ideas || []).filter((d) => d.status !== "done").slice(-40); return a.length ? "ДОШКА ІДЕЙ (вже заплановано, не дублювати):\n" + a.map((d) => "- [" + (d.status === "work" ? "у роботі" : "ідея") + "] " + (d.title || d.code || "") + (d.note ? ": " + d.note.slice(0, 80).replace(/\s+/g, " ") : "")).join("\n") : ""; } catch (e) { return ""; }
+  }
+  async function accountsContext() {
+    const D = await loadData(); if (!D) return "";
+    const E = enrich(D), acc = Object.keys(D.groups || {}).filter((a) => a !== ZIN);
+    return "АКАУНТИ НІШІ (для кола залученості): " + acc.map((a) => "@" + a + " (" + (D.groups[a] || "") + ", " + ((D.spheres || {})[a] || "") + ", медіана " + Math.round(E.meds[a] || 0) + ")").join("; ");
+  }
+  async function addIdea(title, note, status) {
+    try { await TG.api("add", { idea: { id: "st-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), code: "", title: String(title || "Ідея зі Студії").slice(0, 160), note: String(note || "").slice(0, 2000), status: status || "idea", url: "", at: new Date().toISOString() } }); toast(status === "work" ? "Збережено в «У роботі»" : "Додано в банк ідей"); return true; }
+    catch (e) { toast("Не вдалося зберегти: " + (e.message || e), true); return false; }
+  }
+  const ideaBtn = (title, note, status) => { const b = btn(status === "work" ? "В роботу" : "В ідеї", "sm", "idea"); b.onclick = async () => { b.disabled = true; if (await addIdea(title(), note(), status)) b.lastChild.textContent = "Збережено"; else b.disabled = false; }; return b; };
+
+  // =====================================================================
+  // ЗАПИТ ДО СЕРВЕРА
+  // =====================================================================
+  async function callStudio(tool, input, context, title) {
+    return TG.api("studio", { tool, input, context: context || "", title: title || "" });
+  }
+  function errText(e) {
+    const c = e.code || "";
+    if (c === "unknown_action") return "Сервер ще старий: замініть код в Apps Script на новий Code.gs і зробіть нову версію розгортання.";
+    if (c === "no_gemini_key") return "Немає ключа Gemini у властивостях скрипта (GEMINI_API_KEY).";
+    if (c === "limit") return "Ліміт запитів Студії на сьогодні вичерпано. Можна збільшити властивістю STUDIO_LIMIT.";
+    if (c === "bad_model") return "Модель Gemini не знайдена. Перевірте властивість GEMINI_MODEL.";
+    if (c === "gemini_busy") return "Gemini зараз перевантажений або закінчилась квота. Спробуйте за хвилину.";
+    if (c === "bad_answer") return "ШІ відповів нечитабельно. Натисніть ще раз.";
+    if (c === "no_ig") return e.message || "На аркуші ig мало даних.";
+    if (c === "expired") return "Сесія застаріла. Закрийте і знову відкрийте бота.";
+    return "Помилка: " + (e.message || c || e);
+  }
+  const showErr = (e) => toast(errText(e), true);
+
+  // =====================================================================
+  // ІНСТРУМЕНТИ
+  // =====================================================================
+  const SEGS = ["Визначить ШІ", "Некерована дитина", "Мама мовчуна", "Майбутній школяр", "Довіра"];
+  const CTAS = ["Визначить ШІ", "СПОКІЙ", "СЛОВА", "ТЕСТ", "ПРОГРАМА", "Збережіть", "Перешліть"];
+  const TOOLS = [
+    { g: "Створити", id: "reel", icon: "reel", name: "Рилс", desc: "3 хуки з оцінкою, сценарій, тексти на екран, таймінг",
+      fields: [{ k: "idea", l: "Ідея або що сталося", t: "area", ph: "Напр.: мама скаржиться, що син б’ється, коли йому кажуть «ні». На занятті з’ясували, що він не розуміє слова «зачекай»", req: 1 },
+        { k: "len", l: "Довжина", t: "seg", o: ["20 с", "30 с", "45 с"], d: "30 с" }, { k: "seg", l: "Сегмент", t: "seg", o: SEGS }, { k: "cta", l: "Заклик", t: "seg", o: CTAS }, { k: "who", l: "Хто в кадрі (необов’язково)", t: "text", ph: "Напр.: логопед Даша + дитина з дозволом батьків" }],
+      ctx: () => marketContext() },
+    { g: "Створити", id: "caption", icon: "text", name: "Підпис", desc: "Перші 125 символів, пошукові слова, до 5 хештегів, автоперевірка",
+      fields: [{ k: "about", l: "Про що пост або сценарій рилса", t: "area", req: 1 }, { k: "job", l: "Тип", t: "seg", o: ["Рилс (хук у відео)", "Карусель або фото"], d: "Рилс (хук у відео)" },
+        { k: "kw", l: "Пошукові слова через кому", t: "text", ph: "логопед Київ лівий берег, дитина не говорить" }, { k: "cta", l: "Заклик", t: "seg", o: CTAS }] },
+    { g: "Створити", id: "carousel", icon: "slides", name: "Карусель", desc: "Слайди за схемою + готові картинки 1080×1350",
+      fields: [{ k: "idea", l: "Ідея (кроки, ознаки, список)", t: "area", ph: "Напр.: 7 ознак, що дитині 3 роки потрібен логопед", req: 1 }, { k: "n", l: "Слайдів", t: "seg", o: ["6", "8", "10"], d: "8" }, { k: "cta", l: "Заклик", t: "seg", o: CTAS }],
+      ctx: () => marketContext() },
+    { g: "Створити", id: "story", icon: "story", name: "Сторіз", desc: "Кадри на день, стікери, шлях у директ",
+      fields: [{ k: "today", l: "Що сьогодні відбувається", t: "area", ph: "Напр.: відкрили новий кабінет на Позняках, сьогодні перше заняття з сенсорики", req: 1 },
+        { k: "goal", l: "Мета", t: "seg", o: ["Довіра", "Зібрати питання мам", "Запис на консультацію", "Держпрограми"], d: "Довіра" }] },
+    { g: "Планувати", id: "plan", icon: "cal", name: "План тижня", desc: "Що, коли й у якому форматі + коло залученості",
+      fields: [{ k: "events", l: "Що реально сталося цього тижня", t: "area", ph: "Випадки з занять (без імен), питання мам, новини центру, цифри", req: 1 }, { k: "focus", l: "Фокус тижня (необов’язково)", t: "text", ph: "Напр.: набір у групу підготовки до школи" }],
+      ctx: async () => [await marketContext(), await ideasContext(), await accountsContext()].filter(Boolean).join("\n\n") },
+    { g: "Планувати", id: "repurpose", icon: "cut", name: "Переробка", desc: "Ефір, лекція чи консультація → тиждень рилсів і каруселей",
+      fields: [{ k: "src", l: "Розшифровка або текст", t: "big", ph: "Вставте текст ефіру, статті, лекції або нотатки консультації (без імен)", req: 1 }, { k: "kind", l: "Що це", t: "text", ph: "Напр.: прямий ефір з нейропсихологом, 40 хв" }] },
+    { g: "Планувати", id: "swipe", icon: "fire", name: "Свайп-файл", desc: "Формули хуків, що зараз працюють у конкурентів, і наші версії",
+      fields: [{ k: "days", l: "Період", t: "seg", o: ["60 днів", "120 днів", "180 днів"], d: "120 днів" }, { k: "focus", l: "Тема (необов’язково)", t: "text", ph: "Напр.: істерики" }], ctx: null },
+    { g: "Спілкуватись", id: "reply", icon: "chat", name: "Відповіді на коментарі", desc: "Сортування (лід, питання, хейт) і готові відповіді",
+      fields: [{ k: "post", l: "Про що пост", t: "text", ph: "Напр.: рилс «Сміється, коли я кричу»" }, { k: "comments", l: "Коментарі (можна з ніками)", t: "big", ph: "@mama_olia: а якщо в 3 роки тільки мама і дай?\n@user: СПОКІЙ\n...", req: 1 }] },
+    { g: "Спілкуватись", id: "dm", icon: "dm", name: "Директ", desc: "Відповідь на слово, перше повідомлення, колаборація, 2 дожими",
+      fields: [{ k: "kind", l: "Тип", t: "seg", o: ["Відповідь на слово", "Тепле повідомлення", "Колаборація"], d: "Відповідь на слово" }, { k: "who", l: "Кому і що вона зробила", t: "area", ph: "Напр.: Оля, написала СЛОВА під рилсом про мовчунів, синові 2,7", req: 1 },
+        { k: "thing", l: "Що надсилаємо / пропонуємо", t: "text", ph: "Напр.: чек-лист «Скільки слів має бути у 2–3 роки» + посилання" }, { k: "want", l: "Чого хочемо", t: "seg", o: ["Розмова", "Консультація", "Колаборація"], d: "Розмова" }] },
+    { g: "Спілкуватись", id: "comment", icon: "pen", name: "Коментар у чужих", desc: "2 варіанти різних типів, без реклами. Можна пачкою",
+      fields: [{ k: "acc", l: "Акаунт", t: "text", ph: "@акаунт" }, { k: "post", l: "Текст або опис поста. Кілька постів розділіть рядком ---", t: "big", req: 1 }, { k: "as", l: "Від кого", t: "seg", o: ["Як колеги-фахівці", "Як мама з досвідом"], d: "Як колеги-фахівці" }] },
+    { g: "Аналізувати", id: "audit", icon: "chart", name: "Аудит наших рилсів", desc: "Що спрацювало і чому, за даними аркуша ig",
+      fields: [{ k: "q", l: "Що хочете зрозуміти (необов’язково)", t: "text", ph: "Напр.: чому немає підписок" }] },
+    { g: "Аналізувати", id: "profile", icon: "user", name: "Оцінка профілю", desc: "100 балів за 12 пунктами + переписані поля",
+      fields: [{ k: "name", l: "Поле імені (жирний рядок)", t: "text" }, { k: "bio", l: "Біо", t: "area", req: 1 }, { k: "link", l: "Посилання", t: "text" }, { k: "hl", l: "Назви актуального", t: "text" },
+        { k: "pin", l: "Що закріплено (3 пости)", t: "text" }, { k: "grid", l: "Перші 9 обкладинок: що на них", t: "area" }, { k: "other", l: "Інше: фото, категорія, як часто сторіз", t: "text" }] },
+    { g: "Інструменти", id: "human", icon: "human", name: "Олюднити текст", desc: "Прибрати ознаки ШІ-тексту. Працює миттєво, без ШІ", local: true,
+      fields: [{ k: "text", l: "Текст", t: "big", req: 1 }] },
+    { g: "Інструменти", id: "voice", icon: "mic", name: "Голос центру", desc: "Як ми говоримо в кадрі. Додається до кожного запиту",
+      fields: [{ k: "tr", l: "Розшифровки 3+ наших рилсів", t: "big", ph: "Вставте або натисніть «Взяти з дашборда»", req: 1 }] },
+  ];
+  const TOOL = Object.fromEntries(TOOLS.map((t) => [t.id, t]));
+
+  function renderHome() {
+    const box = $("home"); box.replaceChildren();
+    let g = null, grid = null;
+    for (const t of TOOLS) {
+      if (t.g !== g) { g = t.g; box.append(el("div", "grp", g)); grid = el("div", "tools"); box.append(grid); }
+      const b = el("button", "tool" + (t.local ? " loc" : "")); b.append(ico(t.icon), el("b", null, t.name), el("span", null, t.desc));
+      b.onclick = () => go(t.id); grid.append(b);
+    }
+  }
+
+  let cur = null, prefill = {};
+  function go(id, pre) { prefill = pre || {}; location.hash = id; if (location.hash.slice(1) === id) route(); }
+  function renderTool(t) {
+    const box = $("toolp"); box.replaceChildren();
+    const back = el("button", "back"); back.append(ico("chev"), document.createTextNode("Усі інструменти")); back.onclick = () => { location.hash = ""; };
+    const head = card(); const th = el("div", "toolhead"); const tt = el("div"); tt.append(el("h2", null, t.name), el("p", null, t.desc)); th.append(ico(t.icon), tt); head.append(th);
+    const f = el("div", "form2"), vals = {};
+    for (const fd of t.fields) {
+      const lab = el("label"); lab.append(document.createTextNode(fd.l));
+      const pv = prefill[fd.k];
+      if (fd.t === "seg") {
+        const s = el("div", "seg"); vals[fd.k] = () => s.dataset.v || "";
+        const set = (v) => { s.dataset.v = v; s.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x.textContent === v ? "true" : "false")); };
+        fd.o.forEach((o) => { const x = el("button", null, o); x.type = "button"; x.onclick = () => set(o); s.append(x); });
+        set(pv && fd.o.includes(pv) ? pv : fd.d || fd.o[0]); lab.append(s);
+      } else {
+        const i = fd.t === "text" ? el("input") : el("textarea", fd.t === "big" ? "big" : null);
+        if (fd.t === "text") i.type = "text"; i.placeholder = fd.ph || ""; if (pv) i.value = pv; i.id = "f-" + fd.k;
+        try { if (!pv) { const dv = localStorage.getItem("st_" + t.id + "_" + fd.k); if (dv) i.value = dv; } } catch (e) {}
+        i.addEventListener("input", () => { try { localStorage.setItem("st_" + t.id + "_" + fd.k, i.value.slice(0, 20000)); } catch (e) {} });
+        vals[fd.k] = () => i.value.trim(); lab.append(i);
+      }
+      f.append(lab);
+    }
+    if (t.id === "voice") {
+      const cv = el("div", "note2", "Завантажую поточний голос…"); f.prepend(cv);
+      TG.api("voice_get").then((j) => { cv.textContent = j.voice ? "Поточний голос центру (аркуш voice):\n" + j.voice : "Голос ще не задано. Вставте розшифровки або візьміть їх з дашборда."; cv.style.whiteSpace = "pre-wrap"; }).catch(() => { cv.textContent = "Не вдалося прочитати поточний голос (можливо, Code.gs ще старий)."; });
+      f.append(btn("Взяти з дашборда", "sm", "ov", async () => { const D = await loadData(); if (!D) return toast("Немає data.js", true); const a = D.rows.filter((r) => r.account === ZIN && (r.v_text || "").length > 40).sort((x, y) => num(y.views) - num(x.views)).slice(0, 15); if (!a.length) return toast("У дашборді немає розшифровок наших рилсів", true); $("f-tr").value = a.map((r, i) => (i + 1) + ". " + r.v_text).join("\n\n"); toast("Додано " + a.length + " розшифровок"); }));
+    }
+    const go2 = btn(t.local ? "Перевірити" : "Створити", "p", t.local ? "human" : "spark");
+    const acts = el("div", "btns"); acts.style.marginTop = "0"; acts.append(go2); f.append(acts);
+    head.append(f);
+    const res = el("div", "res");
+    box.append(back, head, res);
+    go2.onclick = async () => {
+      const miss = t.fields.find((fd) => fd.req && !vals[fd.k]());
+      if (miss) { toast("Заповніть: " + miss.l, true); return; }
+      const v = Object.fromEntries(t.fields.map((fd) => [fd.k, vals[fd.k]()]));
+      if (t.local) { res.replaceChildren(); R.human(null, res, v); return; }
+      const input = t.fields.map((fd) => { const x = v[fd.k]; return x && x !== "Визначить ШІ" ? fd.l + ": " + x : ""; }).filter(Boolean).join("\n");
+      go2.disabled = true; const lbl = go2.lastChild; lbl.textContent = "Працюю…";
+      res.replaceChildren(loadingCard(t));
+      try {
+        let ctx = t.ctx ? await t.ctx(v) : "";
+        if (t.id === "swipe") { const s = await swipeRows(v); if (!s.rows.length) throw Object.assign(new Error("У дашборді немає даних за цей період"), {}); ctx = s.text; v._rows = s.rows; }
+        const title = (v.idea || v.about || v.today || v.events || v.post || v.who || v.bio || v.src || v.q || t.name || "").replace(/\s+/g, " ").slice(0, 120);
+        const j = await callStudio(t.id, input, ctx, title);
+        res.replaceChildren();
+        (R[t.id] || R.generic)(j.result || {}, res, v, j.data);
+        if (j.left != null && j.left < 10) res.append(el("p", "note2", "Залишилось запитів сьогодні: " + j.left));
+        res.firstChild && res.firstChild.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch (e) { res.replaceChildren(); const c = card("Не вийшло"); c.append(el("p", null, errText(e))); res.append(c); }
+      go2.disabled = false; lbl.textContent = "Створити ще раз";
+    };
+  }
+  function loadingCard(t) { const c = card("Пишу за методом «" + t.name + "»…"); const l = el("div", "loadbox"); for (let i = 0; i < 4; i++) { const s = el("div", "sk skl"); s.style.width = (95 - i * 15) + "%"; l.append(s); } c.append(l, el("p", "note2", "Зазвичай 10–40 секунд.")); return c; }
+
+  // Рилси конкурентів для свайп-файлу: верхня третина (хіти) і нижня (звичайні дні)
+  async function swipeRows(v) {
+    const D = await loadData(); if (!D) return { rows: [], text: "" };
+    const E = enrich(D), days = parseInt(v.days) || 120, fq = (v.focus || "").toLowerCase();
+    const pool = E.rows.filter((o) => o.r.account !== ZIN && !o.ad && o.x != null && o.age >= 3 && o.age <= days && first(o.r).length > 8 && (!fq || (o.r.topic + " " + first(o.r) + " " + o.r.caption).toLowerCase().includes(fq)));
+    const top = pool.filter((o) => o.x >= 3).sort((a, b) => b.x - a.x).slice(0, 24);
+    const bottom = pool.filter((o) => o.x < 1.5).sort(() => Math.random() - 0.5).slice(0, 14);
+    const rows = top.concat(bottom);
+    return { rows, text: "Вибірка: " + rows.length + " рилсів, " + new Set(rows.map((o) => o.r.account)).size + " акаунтів. Верхня частина — × ≥ 3, нижня — × < 1,5.\n" + rows.map((o) => [o.r.code, "@" + o.r.account, "×" + o.x.toFixed(1), nf.format(o.v) + " перегл.", (o.r.duration_s ? Math.round(o.r.duration_s) + " с" : ""), o.r.topic || "", "кадр: " + (o.r.v_frame || "?"), "заклик: " + (o.r.cta || ""), "хук: «" + first(o.r) + "»"].join(" | ")).join("\n") };
+  }
+
+  // =====================================================================
+  // ВІДОБРАЖЕННЯ РЕЗУЛЬТАТІВ
+  // =====================================================================
+  const R = {};
+  R.generic = (r, box) => { const c = card("Результат"); c.append(textBlock(JSON.stringify(r, null, 2))); box.append(c); };
+
+  R.reel = (r, box, v) => {
+    if (r.ask) { const w = el("div", "warnbox"); w.textContent = "Щоб рилс був сильнішим, уточніть: " + r.ask; box.append(w); }
+    if (r.two_ideas) { const w = el("div", "warnbox"); w.textContent = "Тут дві ідеї, тобто два рилси: " + r.two_ideas; box.append(w); }
+    const hooks = (r.hooks || []).map((h, i) => ({ h, i, s: hookScore(h.spoken) })).sort((a, b) => b.s.overall - a.s.overall);
+    let chosen = r.chosen != null && r.hooks && r.hooks[r.chosen] ? r.chosen : hooks.length ? hooks[0].i : 0;
+    const hc = card("Хуки (оцінено)");
+    const scriptBox = el("div");
+    function drawHooks() {
+      hc.querySelectorAll(".hook").forEach((n) => n.remove());
+      for (const { h, i, s } of hooks) {
+        const d = el("div", "hook" + (i === chosen ? " win" : ""));
+        const top = el("div", "top"); top.append(el("span", "score", String(s.overall)), el("span", "pill " + (s.verdict === "СИЛЬНИЙ" ? "ok" : s.verdict === "НОРМ" ? "warn" : "bad"), s.verdict), el("span", "pill", "#" + h.formula_id + " " + (h.formula || "")));
+        d.append(top, el("div", "scr", h.on_screen || ""), el("div", "sp", qq(h.spoken)));
+        if (h.why) d.append(el("div", "why", h.why));
+        const det = el("div", "hidden"); det.append(bars(s.parts)); d.append(det);
+        const r2 = el("div", "btns"); r2.style.marginTop = "0";
+        const bd = btn("Чому така оцінка", "sm"); bd.onclick = () => det.classList.toggle("hidden"); r2.append(bd);
+        if (i !== chosen) r2.append(btn("Знімати цей", "sm", "check", () => { chosen = i; drawHooks(); drawScript(); }));
+        d.append(r2); hc.append(d);
+      }
+      if (hooks.length && hooks[0].s.overall < 50) { const w = el("div", "warnbox"); w.textContent = "Жоден хук не набрав 50. Хука ще немає: додайте в ідею конкретику (цифру, вік, що саме сталося) і створіть ще раз."; hc.append(w); }
+    }
+    if (r.why_chosen) hc.append(el("p", "note2", "Чому обрано: " + r.why_chosen));
+    drawHooks(); box.append(hc, scriptBox);
+    const target = parseInt(v.len) || 30;
+    function drawScript() {
+      scriptBox.replaceChildren();
+      const h = (r.hooks || [])[chosen] || {};
+      const beats = [{ say: h.spoken || "", screen: h.on_screen || "", shot: r.shot0 || "" }].concat((r.beats || []).filter((b, i) => !(i === 0 && b.say === h.spoken)));
+      const bs = beatSheet(beats, h.spoken || "", target);
+      const c = card("Сценарій по секундах");
+      const tw = el("div", "wrapx"), tb = el("table", "beats");
+      tb.innerHTML = "<thead><tr><th>Час</th><th>Кажемо</th><th>На екрані</th><th>У кадрі</th></tr></thead>";
+      const tbody = el("tbody");
+      for (const row of bs.rows) { const tr = el("tr", row.flag ? "flag" : ""); tr.append(el("td", "t", tm(row.from) + "–" + tm(row.to)), el("td", null, row.b.say || "—"), el("td", "sc", row.b.screen || ""), el("td", "sh", row.b.shot || "")); tbody.append(tr); }
+      tb.append(tbody); tw.append(tb); c.append(tw);
+      if (bs.flags.length) { const ul = el("ul", "flags"); bs.flags.forEach((x) => ul.append(el("li", null, x))); c.append(el("p", "note2", "Що виправити перед зйомкою:"), ul); }
+      const script = beats.map((b) => b.say).filter(Boolean).join("\n");
+      c.append(el("h2", null, "Текст для озвучки"));
+      const tbk = textBlock(script); c.append(tbk);
+      const screens = beats.map((b, i) => (b.screen ? tm(bs.rows[i].from) + "  " + b.screen : "")).filter(Boolean).join("\n");
+      c.append(el("h2", null, "Тексти на екрані"), textBlock(screens, { noHuman: true }), el("p", "note2", "До 6 слів на картку, хук з першого кадру, у верхній третині. Не нижче 3/4 висоти й не біля правого краю: там підпис і кнопки Instagram. Субтитри завжди."));
+      const hs = hookScore(h.spoken || ""), hd = H.detect(script);
+      const rc = el("div", "receipt");
+      rc.textContent = ["РИЛС ГОТОВИЙ", "хук:        #" + (h.formula_id || "?") + " " + (h.formula || "") + ", оцінка " + hs.overall + " " + hs.verdict, "довжина:    " + bs.total.toFixed(1) + " с, " + bs.rows.length + " бітів (2,5 слова/с)", "на екрані:  " + beats.filter((b) => b.screen).length + " карток", "людяність:  " + hd.overall + " " + hd.verdict, "петля:      " + (bs.loop ? "так" : "немає") + (r.loop ? " · " + r.loop : ""), "заклик:     " + (r.cta ? (r.cta.word ? r.cta.word + " · " : "") + (r.cta.line || "") : "—"), "обкладинка: " + (r.cover || h.on_screen || ""), "сегмент:    " + (r.segment || "")].join("\n");
+      c.append(rc);
+      const act = el("div", "btns");
+      const full = () => "ХУК (#" + h.formula_id + " " + (h.formula || "") + "): " + (h.spoken || "") + "\nНА ЕКРАНІ: " + (h.on_screen || "") + "\n\n" + bs.rows.map((x) => tm(x.from) + " " + (x.b.say || "") + (x.b.screen ? "  [екран: " + x.b.screen + "]" : "") + (x.b.shot ? "  (" + x.b.shot + ")" : "")).join("\n") + "\n\nЗаклик: " + (r.cta ? (r.cta.word || "") + " " + (r.cta.line || "") : "") + "\nОбкладинка: " + (r.cover || "");
+      act.append(btn("Копіювати все", "sm", "copy", () => copyText(full())));
+      act.append(ideaBtn(() => h.on_screen || h.spoken || "Рилс", full, "work"));
+      act.append(btn("Написати підпис", "sm p", "text", () => go("caption", { about: "Рилс. Хук: " + (h.spoken || "") + "\nСценарій:\n" + tbk.getText(), job: "Рилс (хук у відео)", cta: r.cta && CTAS.includes(r.cta.word) ? r.cta.word : "" })));
+      c.append(act); placeholders(r, c);
+      scriptBox.append(c);
+    }
+    drawScript();
+  };
+
+  R.caption = (r, box, v) => {
+    const c = card("Підпис");
+    c.append(el("p", "note2", "Тип " + (r.job || "?") + ": " + (r.job === "A" ? "хук уже у відео, підпис дає заклик і пошукові слова" : "підпис і є хук") + (r.why_job ? ". " + r.why_job : "")));
+    c.append(textBlock(r.caption || "", { caption: true, keywords: v.kw }));
+    if (r.first_comment) c.append(el("h2", null, "Перший коментар"), textBlock(r.first_comment));
+    if (r.alt_text) c.append(el("h2", null, "Alt-текст"), textBlock(r.alt_text));
+    placeholders(r, c); box.append(c);
+  };
+
+  // ---------- карусель: картинки 1080×1350 на canvas ----------
+  async function renderSlides(slides) {
+    try { await Promise.all([document.fonts.load('600 64px "Unbounded"'), document.fonts.load('400 40px "Onest"'), document.fonts.load('600 40px "Onest"')]); } catch (e) {}
+    const W = 1080, Hh = 1350, PAD = 120, N = slides.length, out = [];
+    const C = { teal: "#1f6f78", ink: "#18202b", cream: "#f6f1ea", orange: "#c2621a", white: "#ffffff", muted: "#5d6877" };
+    const wrap = (ctx, text, maxW) => { const ws = String(text || "").split(/\s+/).filter(Boolean), lines = []; let line = ""; for (const w of ws) { const t = line ? line + " " + w : w; if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t; } if (line) lines.push(line); return lines; };
+    const fit = (ctx, text, font, max, min, maxW, maxLines) => { for (let s = max; s >= min; s -= 4) { ctx.font = font.replace("{s}", s); const l = wrap(ctx, text, maxW); if (l.length <= maxLines) return { s, l }; } ctx.font = font.replace("{s}", min); return { s: min, l: wrap(ctx, text, maxW) }; };
+    slides.forEach((sl, i) => {
+      const cv = document.createElement("canvas"); cv.width = W; cv.height = Hh; const x = cv.getContext("2d");
+      const cover = i === 0, cta = sl.role === "cta", recap = sl.role === "recap";
+      x.fillStyle = cover ? C.teal : cta ? C.orange : C.cream; x.fillRect(0, 0, W, Hh);
+      const fg = cover || cta ? C.white : C.ink;
+      x.fillStyle = cover || cta ? "rgba(255,255,255,.75)" : C.muted; x.font = '500 30px "Onest", sans-serif'; x.textBaseline = "alphabetic";
+      x.textAlign = "right"; x.fillText((i + 1) + "/" + N, W - PAD, PAD); x.textAlign = "left"; x.fillText("@" + ZIN, PAD, Hh - 80);
+      if (!cover && !cta) { x.fillStyle = C.teal; x.fillRect(PAD, PAD + 60, 80, 10); }
+      const hf = fit(x, (sl.head || "").toUpperCase(), '600 {s}px "Unbounded", sans-serif', cover ? 112 : 84, 44, W - PAD * 2, cover ? 5 : 4);
+      let y = cover ? 420 : PAD + 170;
+      x.fillStyle = fg; x.font = '600 ' + hf.s + 'px "Unbounded", sans-serif';
+      for (const l of hf.l) { y += hf.s * 1.12; x.fillText(l, PAD, y); }
+      if (sl.body) {
+        y += cover ? 60 : 50;
+        const items = recap ? String(sl.body).split(/\n|;\s*|(?<=\.)\s+(?=\d)/).filter((s) => s.trim()) : [sl.body];
+        const bs = fit(x, items.join(" "), '400 {s}px "Onest", sans-serif', cover ? 52 : 54, 34, W - PAD * 2, recap ? 14 : 9).s;
+        x.font = '400 ' + bs + 'px "Onest", sans-serif'; x.fillStyle = cover || cta ? "rgba(255,255,255,.92)" : C.ink;
+        for (const it of items) { for (const l of wrap(x, (recap ? "• " : "") + it.trim(), W - PAD * 2)) { y += bs * 1.4; if (y < Hh - 150) x.fillText(l, PAD, y); } if (recap) y += bs * 0.4; }
+      }
+      out.push(cv.toDataURL("image/png"));
+    });
+    return out;
+  }
+  R.carousel = async (r, box) => {
+    if (r.not_carousel) { const w = el("div", "warnbox"); w.textContent = r.not_carousel; box.append(w); }
+    const slides = r.slides || [], c = card("Слайди · " + slides.length);
+    const ROLE = { cover: "ОБКЛАДИНКА", stake: "СТАВКА", idea: "", recap: "ПІДСУМОК", cta: "ЗАКЛИК" };
+    slides.forEach((s, i) => {
+      const fr = el("div", "fr"); const n = el("span", "n", String(i + 1)); const d = el("div");
+      const hw = H.words(s.head).length, bw = H.words(s.body).length, warn = (i === 0 && hw > 6) || hw > 7 || bw > 25;
+      d.append(el("div", "k", (ROLE[s.role] || "") + (warn ? (ROLE[s.role] ? " · " : "") + "задовго: заголовок до " + (i === 0 ? 6 : 7) + " слів, текст до 25" : "")), el("b", null, s.head || ""), el("div", null, s.body || ""));
+      fr.append(n, d); c.append(fr);
+    });
+    c.append(btn("Копіювати тексти слайдів", "sm", "copy", () => copyText(slides.map((s, i) => (i + 1) + ". " + s.head + (s.body ? "\n" + s.body : "")).join("\n\n"))));
+    box.append(c);
+    const ic = card("Картинки 1080×1350"); const g = el("div", "slides"); ic.append(el("p", "note2", "Натисніть і утримуйте картинку, щоб зберегти на телефон. На комп’ютері — кнопка нижче.")); ic.append(g); box.append(ic);
+    const urls = await renderSlides(slides);
+    urls.forEach((u, i) => { const im = el("img"); im.src = u; im.alt = "Слайд " + (i + 1) + ": " + (slides[i].head || ""); g.append(im); });
+    ic.append(btn("Завантажити всі", "sm", "copy", () => urls.forEach((u, i) => { const a = el("a"); a.href = u; a.download = "slide-" + String(i + 1).padStart(2, "0") + ".png"; document.body.append(a); a.click(); a.remove(); })));
+    const cc = card("Підпис (хук у першому рядку)"); cc.append(textBlock(r.caption || "", { caption: true })); if (r.alt_text) cc.append(el("h2", null, "Alt-текст обкладинки"), textBlock(r.alt_text));
+    const ccb = el("div", "btns"); cc.append(ccb); ccb.append(ideaBtn(() => (slides[0] && slides[0].head) || "Карусель", () => slides.map((s, i) => (i + 1) + ". " + s.head + " " + (s.body || "")).join("\n") + "\n\n" + (r.caption || ""), "work"));
+    placeholders(r, cc); box.append(cc);
+  };
+
+  R.story = (r, box) => {
+    const c = card("Сторіз · " + (r.frames || []).length + " кадрів");
+    (r.frames || []).forEach((f, i) => {
+      const fr = el("div", "fr"), d = el("div");
+      d.append(el("div", "k", f.shot || ""), el("b", null, f.screen || ""));
+      if (f.say) d.append(el("div", null, "Кажемо: «" + f.say + "»"));
+      if (f.sticker && f.sticker.type) { const p = el("div", "meta"); p.append(el("span", "pill ok", "Стікер: " + f.sticker.type), el("span", null, (f.sticker.text || "") + (f.sticker.options && f.sticker.options.length ? " · " + f.sticker.options.join(" / ") : ""))); d.append(p); }
+      fr.append(el("span", "n", String(i + 1)), d); c.append(fr);
+    });
+    if (r.after) c.append(el("h2", null, "Після"), el("p", null, r.after));
+    const all = (r.frames || []).map((f, i) => (i + 1) + ". [" + (f.shot || "") + "] " + (f.screen || "") + (f.say ? " | кажемо: " + f.say : "") + (f.sticker && f.sticker.type ? " | стікер " + f.sticker.type + ": " + (f.sticker.text || "") + " " + (f.sticker.options || []).join("/") : "")).join("\n") + (r.after ? "\n\nПісля: " + r.after : "");
+    c.append(el("p", "note2", "Текст тримайте посередині кадру: зверху рядок профілю, знизу поле відповіді.")); c.append(textBlock(all)); placeholders(r, c); box.append(c);
+  };
+
+  R.plan = (r, box) => {
+    const c = card("План тижня");
+    const g = el("div", "daygrid");
+    (r.days || []).forEach((d) => {
+      const x = el("div", "day"), L = el("div", "d"); L.append(document.createTextNode(d.day || "")); L.append(el("small", null, d.time || ""));
+      const R2 = el("div"); const m = el("div", "meta"); m.style.marginTop = "0";
+      if (d.format) m.append(el("span", "pill ok", d.format)); if (d.type) m.append(el("span", "pill", d.type)); if (d.formula_id) m.append(el("span", "pill", "#" + d.formula_id + " " + (d.formula || ""))); if (d.segment) m.append(el("span", "pill warn", d.segment)); if (d.cta) m.append(el("span", "pill", d.cta));
+      R2.append(m); if (d.hook) R2.append(el("div", "h", qq(d.hook))); if (d.angle) R2.append(el("div", "a", d.angle));
+      if (/рилс|карус|сторіз/i.test(d.format || "")) {
+        const b = el("div", "btns"); const toolId = /карус/i.test(d.format) ? "carousel" : /сторіз/i.test(d.format) ? "story" : "reel";
+        b.append(btn("Написати", "sm p", "pen", () => go(toolId, toolId === "story" ? { today: d.angle + "\nХук: " + d.hook } : { idea: (d.angle || "") + "\nХук-орієнтир (#" + d.formula_id + "): " + (d.hook || ""), seg: d.segment, cta: d.cta })));
+        b.append(ideaBtn(() => d.hook || d.angle, () => d.day + " " + (d.time || "") + " · " + d.format + " · " + (d.type || "") + "\n" + (d.angle || "") + "\nФормула #" + d.formula_id + " " + (d.formula || ""), "idea"));
+        R2.append(b);
+      }
+      x.append(L, R2); g.append(x);
+    });
+    c.append(g);
+    if (r.stories) c.append(el("h2", null, "Сторіз"), el("p", null, r.stories));
+    if (r.engage) {
+      c.append(el("h2", null, "Коло залученості: 20 хв щодня до публікації"));
+      for (const [k, t] of [["reach", "5 для охоплення"], ["peers", "3 рівні"], ["buyers", "2 партнери / покупці"]]) if (r.engage[k] && r.engage[k].length) { c.append(el("div", "sub2", t)); const ul = el("ul", "flags"); r.engage[k].forEach((a) => ul.append(el("li", null, a))); c.append(ul); }
+      c.append(btn("Написати коментарі", "sm", "pen", () => go("comment")));
+    }
+    if (r.note) { const w = el("div", "warnbox"); w.textContent = r.note; c.append(w); }
+    placeholders(r, c); box.append(c);
+  };
+
+  R.repurpose = (r, box) => {
+    const c = card("Що знайдено");
+    if (r.found) { const m = el("div", "meta"); for (const k in r.found) m.append(el("span", "pill", k + ": " + r.found[k])); c.append(m); }
+    if (r.thin) { const w = el("div", "warnbox"); w.textContent = r.thin; c.append(w); }
+    const g = el("div", "daygrid");
+    (r.items || []).forEach((d) => {
+      const x = el("div", "day"), L = el("div", "d", d.day || ""), R2 = el("div"), m = el("div", "meta"); m.style.marginTop = "0";
+      m.append(el("span", "pill ok", d.format || "")); if (d.formula_id) m.append(el("span", "pill", "#" + d.formula_id + " " + (d.formula || "")));
+      R2.append(m, el("div", "h", qq(d.hook)), el("div", "a", d.from || ""));
+      const tid = /карус/i.test(d.format) ? "carousel" : /сторіз/i.test(d.format) ? "story" : "reel";
+      const b = el("div", "btns"); b.append(btn("Написати", "sm p", "pen", () => go(tid, tid === "story" ? { today: d.from + "\n" + d.hook } : { idea: (d.from || "") + "\nХук-орієнтир (#" + d.formula_id + "): " + (d.hook || "") })), ideaBtn(() => d.hook, () => (d.format || "") + "\n" + (d.from || ""), "idea"));
+      R2.append(b); x.append(L, R2); g.append(x);
+    });
+    c.append(el("p", "note2", "Пишіть по одному: п’ять готових сценаріїв за раз звучать однаково, і жоден не знімуть.")); c.append(g); placeholders(r, c); box.append(c);
+  };
+
+  R.swipe = (r, box, v) => {
+    const byCode = Object.fromEntries((v._rows || []).map((o) => [o.r.code, o]));
+    const fm = Object.fromEntries((r.rows || []).map((x) => [x.code, x.formula_id]));
+    const c = card("Свайп-файл · " + (v._rows || []).length + " рилсів");
+    if (r.confidence) c.append(el("p", "note2", r.confidence));
+    if (r.over && r.over.length) { c.append(el("h2", null, "Що переважає у хітах")); const t = el("table", "tbl"); t.innerHTML = "<thead><tr><th>Формула</th><th class=num>У хітах</th><th class=num>У звичайних</th></tr></thead>"; const tb = el("tbody"); r.over.forEach((o) => { const tr = el("tr"); tr.append(el("td", null, "#" + o.formula_id + " " + (o.formula || "")), el("td", "num", String(o.top)), el("td", "num", String(o.bottom))); tb.append(tr); }); t.append(tb); c.append(t); }
+    if (r.structure && r.structure.length) { c.append(el("h2", null, "Що спільного в хітів")); const ul = el("ul", "flags"); r.structure.forEach((s) => ul.append(el("li", null, s))); c.append(ul); }
+    if (r.unclassified) c.append(el("h2", null, "Не підійшла жодна формула"), el("p", null, r.unclassified));
+    box.append(c);
+    const yc = card("Наші версії: можна знімати завтра");
+    (r.yours || []).forEach((y) => {
+      const s = hookScore(y.hook), d = el("div", "hook"), top = el("div", "top");
+      top.append(el("span", "score", String(s.overall)), el("span", "pill " + (s.verdict === "СИЛЬНИЙ" ? "ok" : "warn"), s.verdict), el("span", "pill", "#" + y.formula_id + " " + (y.formula || "")), y.segment ? el("span", "pill warn", y.segment) : "");
+      d.append(top, el("div", "scr", y.on_screen || ""), el("div", "sp", qq(y.hook)));
+      const b = el("div", "btns"); b.style.marginTop = "0"; b.append(btn("Написати рилс", "sm p", "reel", () => go("reel", { idea: "Хук за формулою #" + y.formula_id + ": " + y.hook, seg: y.segment })), ideaBtn(() => y.on_screen || y.hook, () => "Формула #" + y.formula_id + " " + (y.formula || "") + "\n" + y.hook, "idea"));
+      d.append(b); yc.append(d);
+    });
+    box.append(yc);
+    const tc = card("Рилси у вибірці"); const tw = el("div", "wrapx"), t = el("table", "tbl");
+    t.innerHTML = "<thead><tr><th class=num>×</th><th>Акаунт</th><th>Формула</th><th>Перші слова</th></tr></thead>"; const tb = el("tbody");
+    (v._rows || []).forEach((o) => { const tr = el("tr"), a = el("a", null, "@" + o.r.account); a.href = o.r.url; a.target = "_blank"; const ta = el("td"); ta.append(a); tr.append(el("td", "num", o.x.toFixed(1)), ta, el("td", null, fm[o.r.code] ? "#" + fm[o.r.code] : fm[o.r.code] === 0 ? "?" : ""), el("td", null, first(o.r).slice(0, 90))); tb.append(tr); });
+    t.append(tb); tw.append(t); tc.append(tw); box.append(tc);
+  };
+
+  R.reply = (r, box) => {
+    const c = card("Відповіді");
+    if (r.counts) { const m = el("div", "meta"); for (const k in r.counts) if (r.counts[k]) m.append(el("span", "pill" + (k === "ЛІД" || k === "ПИТАННЯ" ? " ok" : k === "ШУМ" ? " bad" : ""), k + ": " + r.counts[k])); c.append(m); }
+    const ORDER = ["СЛОВО", "ЛІД", "ПО СУТІ", "ПИТАННЯ", "ПІДТРИМКА", "ШУМ"], items = r.items || [];
+    for (const b of ORDER) {
+      const a = items.filter((x) => x.bucket === b); if (!a.length) continue;
+      const s = el("div", "bucket"); s.append(el("h3", null, b + " · " + a.length));
+      if (b === "ШУМ") { s.append(el("p", "note2", "Не відповідаємо: відповідь дає їм охоплення. Образливе приховайте.")); a.forEach((x) => s.append(el("div", "cm", (x.who ? x.who + ": " : "") + x.comment))); c.append(s); continue; }
+      a.forEach((x) => { s.append(el("div", "cm", (x.who ? x.who + ": " : "") + "«" + x.comment + "»")); if (x.reply) s.append(textBlock(x.reply)); if (x.reel) { const w = el("div", "meta"); w.append(el("span", "pill ok", "Це тема для рилса-відповіді"), btn("Написати рилс", "sm p", "reel", () => go("reel", { idea: "Рилс-відповідь на коментар " + (x.who || "") + ": «" + x.comment + "». Хук-орієнтир (#16): " + x.reel }))); s.append(w); } });
+      c.append(s);
+    }
+    if (r.note) c.append(el("p", "note2", r.note));
+    placeholders(r, c); box.append(c);
+  };
+
+  R.dm = (r, box) => {
+    const c = card("Повідомлення");
+    if (r.warning) { const w = el("div", "warnbox"); w.textContent = r.warning; c.append(w); }
+    (r.messages || []).forEach((m) => { c.append(el("div", "sub2", (m.label || "") + (m.day && m.day !== "зараз" ? " · через " + m.day.replace("+", "") + " дн." : "") + " · " + (m.text || "").length + " симв.")); c.append(textBlock(m.text || "")); });
+    c.append(el("p", "note2", "Надсилайте вручну. Масові розсилки тим, хто не писав першим, порушують правила Instagram і блокують акаунт. Автовідповідь на слово через інструменти Instagram — можна."));
+    placeholders(r, c); box.append(c);
+  };
+
+  R.comment = (r, box) => {
+    const c = card("Коментарі");
+    (r.options || []).forEach((o, i) => { c.append(el("div", "sub2", (o.post ? o.post + " · " : "") + "Тип " + (o.type_id || "") + " · " + (o.type || "") + (i === r.pick && !o.post ? " · радимо цей" : ""))); c.append(textBlock(o.text || "")); });
+    if (r.why) c.append(el("p", "note2", r.why));
+    c.append(el("p", "note2", "Публікуйте самі й рано: коментар у першу годину їде разом із рилсом. Без реклами центру."));
+    placeholders(r, c); box.append(c);
+  };
+
+  R.profile = (r, box) => {
+    const c = card("Оцінка профілю");
+    const top = el("div", "meta"); top.append(el("span", "bigscore", (r.score || 0) + "/100")); if (r.after) top.append(el("span", "pill ok", "після правок ≈ " + r.after)); c.append(top);
+    const t = el("table", "tbl"); t.innerHTML = "<thead><tr><th>Пункт</th><th class=num>Бали</th><th>Чому</th></tr></thead>"; const tb = el("tbody");
+    (r.items || []).slice().sort((a, b) => (b.max - b.got) - (a.max - a.got)).forEach((x) => { const tr = el("tr"); tr.append(el("td", null, x.name), el("td", "num", x.got + "/" + x.max), el("td", null, x.note || "")); tb.append(tr); });
+    t.append(tb); c.append(t); box.append(c);
+    const w = card("Що змінити, по черзі");
+    (r.rewrites || []).forEach((x) => { w.append(el("div", "sub2", x.field)); if (x.why) w.append(el("p", "note2", x.why)); (x.options || []).forEach((o) => { const tb2 = textBlock(o, { extra: (m, txt) => { if (/імен/i.test(x.field)) m.append(el("span", "pill " + (txt.length <= 30 ? "ok" : "bad"), txt.length + "/30")); if (/біо/i.test(x.field) && !/рядок/i.test(x.field)) m.append(el("span", "pill " + (txt.length <= 150 ? "ok" : "bad"), txt.length + "/150")); } }); w.append(tb2); }); });
+    if (r.rest) { const z = el("div", "warnbox"); z.textContent = "Переписуванням не вирішити: " + r.rest; w.append(z); }
+    placeholders(r, w); box.append(w);
+  };
+
+  R.audit = (r, box, v, data) => {
+    if (data) {
+      const c = card("Аудит · " + data.n + " рилсів · " + data.from + " – " + data.to + " · медіана " + nf.format(data.median));
+      const tbl = (title, list) => { c.append(el("div", "sub2", title)); const tw = el("div", "wrapx"), t = el("table", "tbl"); t.innerHTML = "<thead><tr><th class=num>×</th><th>Рилс</th><th class=num>Перегл.</th><th class=num>Поширень на 100 охопл.</th><th class=num>Підписок</th><th class=num>Збережень</th><th class=num>с</th></tr></thead>"; const tb = el("tbody"); list.forEach((x) => { const tr = el("tr"); const td = el("td"); if (x.url) { const a = el("a", null, x.cap || "без підпису"); a.href = x.url; a.target = "_blank"; td.append(a); } else td.textContent = x.cap || "без підпису"; tr.append(el("td", "num", x.x.toFixed(1)), td, el("td", "num", nf.format(x.views)), el("td", "num", String(x.sends)), el("td", "num", String(x.fol)), el("td", "num", String(x.sav)), el("td", "num", String(Math.round(x.dur)))); tb.append(tr); }); t.append(tb); tw.append(t); c.append(tw); };
+      tbl("Топ-5 за кратністю до медіани", data.top); tbl("Низ-5", data.bottom); tbl("Найбільше поширень на охоплення (головний сигнал)", data.topSends);
+      if (data.lengths) { const m = el("div", "meta"); data.lengths.forEach((l) => m.append(el("span", "pill", l.len + ": ×" + l.x + " (n=" + l.n + ")"))); c.append(el("div", "sub2", "Довжина (медіана кратності)"), m); }
+      if (data.highViewsLowFollows) c.append(el("p", "note2", data.highViewsLowFollows + " рилсів мали ×2+ переглядів, але майже без підписок: це сигнал перевірити профіль."));
+      box.append(c);
+    }
+    const f = card("Що кажуть дані");
+    (r.findings || []).forEach((x, i) => { const d = el("div", "fr"); const b = el("div"); b.append(el("b", null, x.claim || ""), el("div", "k", (x.evidence || "") + (x.confidence ? " · впевненість: " + x.confidence : ""))); d.append(el("span", "n", String(i + 1)), b); f.append(d); });
+    if (r.profile_problem) { const w = el("div", "warnbox"); w.append(document.createTextNode("Перегляди є, підписок мало: це проблема профілю, а не рилсів. ")); const a = btn("Оцінити профіль", "sm", "user", () => go("profile")); w.append(a); f.append(w); }
+    if (r.stop) f.append(el("div", "sub2", "ПРИПИНИТИ"), el("p", null, r.stop));
+    if (r.more) f.append(el("div", "sub2", "РОБИТИ БІЛЬШЕ"), el("p", null, r.more));
+    box.append(f);
+    if (r.next_hooks && r.next_hooks.length) { const n = card("Хуки на наступний тиждень"); r.next_hooks.forEach((y) => { const s = hookScore(y.hook), d = el("div", "hook"), top = el("div", "top"); top.append(el("span", "score", String(s.overall)), el("span", "pill", "#" + y.formula_id)); d.append(top, el("div", "scr", y.on_screen || ""), el("div", "sp", qq(y.hook))); const b = el("div", "btns"); b.style.marginTop = "0"; b.append(btn("Написати рилс", "sm p", "reel", () => go("reel", { idea: "Хук за формулою #" + y.formula_id + ": " + y.hook }))); d.append(b); n.append(d); }); box.append(n); }
+    placeholders(r, f);
+  };
+
+  R.human = (r, box, v) => {
+    if (r && r.text) { const c = card("Переписано"); c.append(textBlock(r.text)); box.append(c); return; }
+    const before = H.detect(v.text), cl = H.clean(v.text), after = H.detect(cl.text);
+    const c = card("Результат");
+    const m = el("div", "meta"); m.append(el("span", "pill", "Було " + before.overall + " · " + before.verdict), el("span", "pill " + (after.pass ? "ok" : "warn"), "Стало " + after.overall + " · " + after.verdict)); c.append(m);
+    if (cl.changes.length) c.append(el("p", "note2", "Прибрано автоматично: " + cl.changes.join(", ")));
+    c.append(textBlock(cl.text));
+    c.append(el("p", "note2", "Це 5 локальних перевірок (ритм, конкретика, штампи, відбитки ШІ, живий голос), схожих на те, що дивляться детектори. Це не GPTZero і не гарантія, але виправлення цих місць зазвичай робить текст живішим."));
+    box.append(c);
+  };
+
+  R.voice = (r, box) => { const c = card("Голос центру збережено"); c.append(el("p", "note2", "Записано на аркуш voice у таблиці. Тепер він додається до кожного запиту Студії. Можна правити прямо в таблиці.")); c.append(textBlock(r.voice || "")); box.append(c); };
+
+  // =====================================================================
+  // ІСТОРІЯ
+  // =====================================================================
+  let histLoaded = false;
+  async function loadHist() {
+    const box = $("hist"); box.replaceChildren(); for (let i = 0; i < 4; i++) box.append(el("div", "sk skl"));
+    try {
+      const j = await TG.api("studio_hist"); box.replaceChildren(); histLoaded = true;
+      if (!j.items.length) { box.append(el("p", "note2", "Поки порожньо. Створіть щось у Студії.")); return; }
+      for (const it of j.items) {
+        const t = TOOL[it.tool] || { name: it.tool, icon: "spark" };
+        const row = el("button", "fr"); row.style.cssText = "width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);";
+        const n = el("span", "n"); n.append(ico(t.icon)); n.querySelector("svg").style.cssText = "width:16px;height:16px";
+        const d = el("div"); d.append(el("b", null, t.name + (it.title ? ": " + it.title : "")), el("div", "k", (it.byName || "") + " · " + new Date(it.at).toLocaleString("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })));
+        row.append(n, d);
+        row.onclick = () => { setTab("tool"); const box2 = $("toolp"); box2.replaceChildren(); const back = el("button", "back"); back.append(ico("chev"), document.createTextNode("До історії")); back.onclick = () => setTab("hist"); const res = el("div", "res"); box2.append(back, res); const v = { len: "30 с", _rows: [] }; try { (R[it.tool] || R.generic)(it.result || {}, res, v, it.data); } catch (e) { R.generic(it.result || {}, res); } };
+        box.append(row);
+      }
+    } catch (e) { box.replaceChildren(el("p", "note2", errText(e))); }
+  }
+
+  // =====================================================================
+  // НАВІГАЦІЯ
+  // =====================================================================
+  function setTab(t) {
+    document.querySelectorAll("section[data-p]").forEach((s) => (s.hidden = s.dataset.p !== t));
+    document.querySelectorAll(".item[data-t]").forEach((b) => b.setAttribute("aria-current", b.dataset.t === (t === "tool" ? "home" : t) ? "page" : "false"));
+    $("title").textContent = t === "hist" ? "Історія Студії" : t === "tool" && cur ? cur.name : "Студія";
+    drawer(false); window.scrollTo(0, 0); syncBack();
+  }
+  document.querySelectorAll(".item[data-t]").forEach((b) => (b.onclick = () => { if (b.dataset.t === "hist") { if (location.hash) history.replaceState(null, "", location.pathname + location.search); setTab("hist"); loadHist(); } else { location.hash = ""; route(); } }));
+  function route() {
+    const id = location.hash.slice(1);
+    if (TOOL[id]) { cur = TOOL[id]; renderTool(cur); prefill = {}; setTab("tool"); }
+    else { cur = null; setTab("home"); }
+  }
+  function syncBack() {
+    if (!tg || !tg.BackButton) return;
+    const show = document.body.classList.contains("drawer") || !!location.hash || !$("toolp").hidden;
+    show ? tg.BackButton.show() : tg.BackButton.hide();
+  }
+  if (tg && tg.BackButton) tg.BackButton.onClick(() => { if (document.body.classList.contains("drawer")) drawer(false); else if (location.hash) history.back(); else { location.hash = ""; route(); } });
+  window.addEventListener("hashchange", route);
+
+  renderHome();
+  route();
+  TG.gate({ quiet: true }).catch(() => {});
+  window.__studio = { H, hookScore, beatSheet, lintCaption, R, renderSlides };
+})();
+</script>
+</body>
+</html>
