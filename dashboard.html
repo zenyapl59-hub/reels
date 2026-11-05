@@ -309,6 +309,7 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
   <nav class="nav" id="nav" aria-label="Розділи">
     <div class="brand"><span class="logo">R</span><b>Reels<br>аналітика</b></div>
     <button class="item" data-t="ov" data-ico="ov" aria-current="page"><span class="lbl">Огляд</span></button>
+    <button class="item" data-t="me" data-ico="me"><span class="lbl">Ми</span></button>
     <button class="item" data-t="tr" data-ico="trend"><span class="lbl">Тренди</span></button>
     <button class="item" data-t="tp" data-ico="tp"><span class="lbl">Теми</span></button>
     <button class="item" data-t="ac" data-ico="ac"><span class="lbl">Акаунти</span></button>
@@ -347,6 +348,15 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
         <div class="list" id="all"></div>
         <button class="more" id="more" hidden>Показати ще</button>
       </div>
+    </section>
+
+    <section data-p="me" hidden>
+      <p class="pagenote" id="me-upd">Наші рилси: реальні цифри з Instagram (Metricool та імпорт з Meta Business Suite).</p>
+      <div class="hero" id="me-hero"></div>
+      <div class="card"><h2>Головне</h2><ul class="takes" id="me-takes"></ul></div>
+      <div class="card"><h2>Утримання</h2><p class="note">Середній час перегляду кожного рилса. Ціль центру — 10+ с. Тап — відкрити в Instagram.</p><div class="rows" id="me-watch"></div></div>
+      <div class="card"><h2>Останні рилси</h2><p class="note">× — від нашої медіани переглядів. Тап — відкрити в Instagram.</p><div class="rows" id="me-list"></div><button class="more" id="me-more" hidden>Показати ще</button></div>
+      <div class="card"><h2>Прогноз ШІ проти факту</h2><p class="note" id="me-cal-note">Оцінка зі сторінки «Перевірка рилса» поруч із тим, що рилс реально набрав.</p><div class="rows" id="me-cal"></div></div>
     </section>
 
     <section data-p="tr" hidden>
@@ -431,6 +441,7 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
     search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
     scan: '<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M10 9.2v5.6l4.6-2.8z"/>',
     trend: '<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+    me: '<circle cx="12" cy="8" r="3.8"/><path d="M4.5 20c1-4 4-6 7.5-6s6.5 2 7.5 6"/>',
     ads: '<path d="M4 10v4a1 1 0 0 0 1 1h3l6 4V5L8 9H5a1 1 0 0 0-1 1zM18 9a4 4 0 0 1 0 6M8 15l1.5 5"/>',
     down: '<path d="m3 7 6 6 4-4 8 8"/><path d="M15 17h6v-6"/>',
   };
@@ -524,7 +535,7 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
 
     const S = { period: "365", sphere: "", topic: "", account: "", tab: "ov", sort: "v", q: "", limit: 25, wk: "v_hook", ca: ZIN, cb: "" };
     const PERIODS = [["30", "30 днів"], ["90", "90 днів"], ["365", "Рік"], ["all", "Увесь час"]];
-    const TITLES = { ov: "Огляд", tr: "Тренди", tp: "Теми", ac: "Акаунти", cm: "Порівняння", wk: "Що працює", ad: "Реклама" };
+    const TITLES = { ov: "Огляд", me: "Ми", tr: "Тренди", tp: "Теми", ac: "Акаунти", cm: "Порівняння", wk: "Що працює", ad: "Реклама" };
     const inP = (r, p = S.period, end = LAST) => p === "all" || (r.t <= end && end - r.t <= Number(p) * DAY);
     const slice = (o = {}) => R.filter((r) => inP(r) && (o.noSphere || !S.sphere || r.sp === S.sphere) && (o.noTopic || !S.topic || r.topic === S.topic) && (o.noAcc || !S.account || r.account === S.account));
     const comp = (rs) => rs.filter((r) => r.account !== ZIN);
@@ -1074,6 +1085,76 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
       ].map(([i, t]) => { const li = el("li"); const s = el("span", "ic"); s.append(ico(i)); li.append(s, el("div", null, t)); return li; }));
     }
 
+
+    // ---------- Ми: реальна статистика наших рилсів (Apps Script → аркуші ig і mc) ----------
+    const MS = { tried: false, loaded: false, d: null, err: null, limit: 15 };
+    function drawMe() {
+      if (!MS.tried) {
+        MS.tried = true;
+        $("me-hero").replaceChildren(...[0, 1, 2].map(() => { const c = el("div", "card"); c.append(sk("60%", 12), sk("50%", 26), sk("70%", 10)); c.children[1].style.marginTop = "12px"; c.children[2].style.marginTop = "10px"; return c; }));
+        for (const id of ["me-watch", "me-list", "me-cal"]) skLines($(id), 4);
+        $("me-takes").replaceChildren(...[0, 1, 2].map(() => { const li = el("li"); li.append(sk("32px", 32, "10px")); const t = el("div"); t.append(sk("90%", 12)); li.append(t); return li; }));
+        TG.api("me").then((d) => { MS.d = d; }).catch((e) => { MS.err = e; }).finally(() => { MS.loaded = true; if (S.tab === "me") meUI(); });
+        return;
+      }
+      if (MS.loaded) meUI();
+    }
+    function meUI() {
+      const sec = document.querySelector("section[data-p='me']");
+      if (MS.err || !MS.d || !MS.d.reels || !MS.d.reels.length) {
+        const old = MS.err && MS.err.code === "unknown_action";
+        $("me-hero").replaceChildren(); $("me-takes").closest(".card").hidden = true;
+        for (const id of ["me-watch", "me-cal"]) $(id).closest(".card").hidden = true;
+        $("me-list").replaceChildren(emptyBox(old ? "Потрібен новий Code.gs" : MS.err ? "Не вдалося завантажити" : "Статистики ще немає",
+          old ? "Власник має вставити новий Code.gs в Apps Script і розгорнути нову версію." : MS.err ? "Перевірте інтернет і спробуйте ще раз." : "Підключіть Metricool в Apps Script (setupMetricool) або імпортуйте аркуш mc чи ig у таблицю.",
+          [["Спробувати ще раз", () => { MS.tried = false; MS.loaded = false; MS.err = null; drawMe(); }]]));
+        return;
+      }
+      for (const c of sec.querySelectorAll(".card")) c.hidden = false;
+      const d = MS.d, all = d.reels, org = all.filter((r) => !r.ad), wt = org.filter((r) => r.awt != null);
+      const upd = d.mcUpdated ? new Date(d.mcUpdated) : null;
+      $("me-upd").textContent = "Наші рилси з Instagram. " + (upd ? "Metricool оновлено " + upd.toLocaleDateString("uk-UA") + " о " + upd.toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" }) + "." : "Metricool ще не підключено, показую імпорт з Meta Business Suite.") + " Медіана — по " + nf.format(d.n) + " органічних рилсах старших 7 днів.";
+      const last30 = org.filter((r) => r.age <= 30 && r.age >= 3), m30 = med(last30.map((r) => r.views));
+      const awtM = med(wt.map((r) => r.awt)), vrM = med(wt.map((r) => r.vr));
+      $("me-hero").replaceChildren(
+        tileUI("Медіана переглядів", d.median, fk, m30 ? "за 30 днів " + nf.format(Math.round(m30)) + " (" + (m30 >= d.median ? "+" : "") + Math.round(100 * (m30 / d.median - 1)) + "%)" : nf.format(d.n) + " рилсів", m30 ? (m30 >= d.median ? "up" : "down") : ""),
+        tileUI("Сер. перегляд", awtM == null ? "—" : f1(awtM) + " с", null, awtM == null ? "немає даних Metricool" : "ціль 10+ с · " + wt.length + " рилсів", awtM == null ? "" : awtM >= 10 ? "up" : "down", true),
+        tileUI("Дивились 3+ с", vrM == null ? "—" : Math.round(vrM) + "%", null, vrM == null ? "немає даних Metricool" : "решта гортає в перші 3 с", "", true));
+      for (const b of $("me-hero").querySelectorAll(".big.sm")) b.className = "big";
+      // висновки
+      const T = [];
+      if (wt.length >= 3) {
+        const best = [...wt].sort((a, b) => b.awt - a.awt)[0], worst = [...wt].sort((a, b) => a.vr - b.vr)[0];
+        T.push(["clock", `Найдовше дивились «${(best.cap || "рилс").slice(0, 70)}»: ${f1(best.awt)} с у середньому, ${fx(best.x)} від медіани. Розберіть його перший кадр і повторіть прийом.`]);
+        if (worst !== best) T.push(["down", `Найбільше гортали в перші 3 с «${(worst.cap || "рилс").slice(0, 70)}»: довше 3 с дивились лише ${worst.vr}%. Слабкий перший кадр або хук.`]);
+        const ok10 = cnt(wt, (r) => r.awt >= 10); T.push(["target", `Ціль «10+ с середнього перегляду» досягли ${ok10} з ${wt.length} рилсів.`]);
+      }
+      const sh = [...org].filter((r) => r.age >= 3).sort((a, b) => (b.shares / Math.max(1, b.reach)) - (a.shares / Math.max(1, a.reach)))[0];
+      if (sh && sh.shares) T.push(["trend", `Найбільше поширювали «${(sh.cap || "рилс").slice(0, 70)}»: ${sh.shares} поширень на ${nf.format(sh.reach)} охоплення. Поширення — головний сигнал для нових людей.`]);
+      const c = d.calib;
+      if (c && c.n >= 4 && c.hiN && c.loN) T.push(["scan", c.hiX > c.loX ? `Оцінки ШІ підтверджуються: рилси з 70+ набрали типово ${fx(c.hiX)}, нижче 70 — ${fx(c.loX)}.` : `Оцінки ШІ поки не підтверджуються: рилси з 70+ набрали ${fx(c.hiX)}, нижче 70 — ${fx(c.loX)}. ШІ бачить ці пари і калібрується.`]);
+      $("me-takes").replaceChildren(...(T.length ? T : [["idea", "Висновки з’являться, коли Metricool збере дані хоча б про 3 рилси."]]).map(([i, t], k) => { const li = el("li"); li.style.animationDelay = k * 60 + "ms"; const s2 = el("span", "ic"); s2.append(ico(i)); li.append(s2, el("div", null, t)); return li; }));
+      // утримання
+      const wl = [...wt].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15), maxW = Math.max(10, ...wl.map((r) => r.awt));
+      $("me-watch").replaceChildren(...(wl.length ? wl.map((r) => barRow(r.cap || r.code, f1(r.awt) + " с", 100 * r.awt / maxW, [dmy(r.date), r.vr != null ? "3+ с " + r.vr + "%" : "", nf.format(r.views) + " перегл."].filter(Boolean).join(" · "), () => open(r.url), false, r.awt >= 10 ? "var(--accent)" : r.awt < 6 ? "var(--us)" : "var(--c3)"))
+        : [emptyBox("Утримання ще немає", "Середній час перегляду дає лише Metricool. Підключіть його в Apps Script (setupMetricool) або імпортуйте аркуш mc.")]));
+      grow($("me-watch"));
+      // список
+      const maxV = Math.max(...all.slice(0, MS.limit).map((r) => r.views));
+      $("me-list").replaceChildren(...all.slice(0, MS.limit).map((r) => barRow(r.cap || r.code, nf.format(r.views) + " · " + fx(r.x), 100 * r.views / maxV,
+        [dmy(r.date), r.ad ? "схоже на рекламу" : "", r.awt != null ? "сер. " + f1(r.awt) + " с" : "", "поширень " + (r.shares || 0), "збережень " + (r.saves || 0), r.follows ? "підписок " + r.follows : "", r.score != null ? "ШІ: " + r.score + "/100" : ""].filter(Boolean).join(" · "),
+        () => open(r.url), false, r.ad ? "var(--c3)" : r.x >= 1 ? "var(--accent)" : "var(--us)")));
+      $("me-more").hidden = all.length <= MS.limit; $("me-more").onclick = () => { MS.limit += 15; meUI(); };
+      grow($("me-list"));
+      // прогноз проти факту
+      if (c && c.n) {
+        $("me-cal-note").textContent = `${c.n} рилс(ів) з оцінкою ШІ і цифрами через 7+ днів. Прив’язати рилс до перевірки можна в «Перевірка рилса» → Історія.` + (c.corr != null ? ` Збіг оцінок із фактом: ${String(c.corr).replace(".", ",")} (1 — ідеально, 0 — навмання).` : "");
+        const mx = Math.max(1, ...c.pairs.map((p) => p.x || 0));
+        $("me-cal").replaceChildren(...c.pairs.map((p) => barRow(p.title || "Рилс", "ШІ " + p.score + " → " + fx(p.x), 100 * (p.x || 0) / mx, [dmy(p.date), nf.format(p.views) + " перегл.", p.awt != null ? "сер. " + f1(p.awt) + " с" : ""].filter(Boolean).join(" · "), null, false, p.x >= 1 ? "var(--accent)" : "var(--us)")));
+        grow($("me-cal"));
+      } else $("me-cal").replaceChildren(emptyBox("Пар ще немає", "Відкрийте «Перевірка рилса» → Історія, виберіть перевірку і вкажіть, який рилс опубліковано. Через 7 днів тут з’явиться порівняння.", [["Відкрити перевірку", () => { location.href = "check.html"; }]]));
+    }
+
     // ---------- розділи ----------
     function setTab(t) {
       S.tab = t; $("title").textContent = TITLES[t];
@@ -1088,7 +1169,7 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
     let lastW = innerWidth, rT;
     addEventListener("resize", () => { if (innerWidth === lastW) return; lastW = innerWidth; clearTimeout(rT); rT = setTimeout(() => { if (S.tab === "cm") drawCompare(); }, 200); });
 
-    function draw() { chipsUI(); $("bar").hidden = S.tab === "tr" || S.tab === "ad"; ({ ov: drawOverview, tr: drawTrends, tp: drawTopics, ac: drawAccounts, cm: drawCompare, wk: drawWorks, ad: drawAds })[S.tab](); }
+    function draw() { chipsUI(); $("bar").hidden = S.tab === "tr" || S.tab === "ad" || S.tab === "me"; ({ ov: drawOverview, me: drawMe, tr: drawTrends, tp: drawTopics, ac: drawAccounts, cm: drawCompare, wk: drawWorks, ad: drawAds })[S.tab](); }
     const start = location.hash.slice(1);
     if (TITLES[start]) setTab(start); else draw();
   }

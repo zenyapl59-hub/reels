@@ -354,6 +354,25 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
 .hist .it { grid-template-columns: 44px minmax(0, 1fr) auto; }
 .score-badge { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
 .score-badge.mid { background: var(--soft); color: var(--ink); } .score-badge.low { background: var(--us-soft); color: var(--us); }
+/* ---------- прогноз проти факту ---------- */
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+@media (max-width: 380px) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.facts > div { border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; min-width: 0; }
+.facts .k { font-size: 12px; color: var(--muted); }
+.facts b { display: block; font-size: 16px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.facts b.up { color: var(--good); } .facts b.down { color: var(--bad); }
+.pick { display: grid; gap: 6px; margin-top: 10px; }
+.pick button { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; text-align: left; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); min-height: 44px; }
+.pick button.g { border-color: var(--accent); background: var(--accent-soft); }
+.pick .t { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pick .m { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.pick .v { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cal { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.cal:last-child { border-bottom: 0; }
+.cal .a { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal .b { font-size: 12px; color: var(--muted); }
+.cal .c { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cal .c small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
 .toast { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 60; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 14px; box-shadow: var(--shadow); transition: opacity .25s, transform .25s var(--ease); max-width: calc(100% - 32px); }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 .toast.err { background: var(--bad); color: #fff; }
@@ -411,7 +430,8 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
     </section>
 
     <section data-p="hist" hidden>
-      <p class="pagenote">Останні перевірки всієї команди. Тап — відкрити результат.</p>
+      <p class="pagenote">Останні перевірки всієї команди. Тап — відкрити результат і прив’язати опублікований рилс, щоб побачити факт.</p>
+      <div class="card" id="calib" hidden></div>
       <div class="card"><div class="list hist" id="hist"></div></div>
     </section>
   </main>
@@ -721,6 +741,7 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
     sb.append(ring, vt); c1.append(sb);
     if (left != null) c1.append(el("p", "note", "Залишилось перевірок сьогодні: " + left));
     box.append(c1);
+    if (ctx.check) box.append(factCard(ctx.check, score));
     // ризики
     if (r.risks && r.risks.length) for (const x of r.risks) box.append(el("div", "risk", "⚠ " + x));
     // чек-лист стратегії центру
@@ -779,17 +800,83 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
   }
 
   // ---------- історія ----------
-  let hist = null;
+  let hist = null, HP = { reels: [], calib: null, median: 0 };
+  const fxx = (x) => x == null ? "—" : (x >= 10 ? Math.round(x) : (Math.round(x * 10) / 10).toString().replace(".", ",")) + "×";
+  const f1 = (v) => v == null ? "—" : (Math.round(v * 10) / 10).toString().replace(".", ",");
+  const dmy = (d) => d ? d.split("-").reverse().join(".") : "";
+  const openUrl = (u) => { if (tg && tg.openLink) tg.openLink(u); else window.open(u, "_blank", "noopener"); };
+
+  // Прогноз проти факту: підсумок над історією
+  function drawCalib() {
+    const box = $("calib"), c = HP.calib;
+    if (!c || !c.n) { box.hidden = true; return; }
+    box.hidden = false;
+    let msg = "";
+    if (c.n >= 4 && c.hiN && c.loN) msg = c.hiX > c.loX ? `Рилси з оцінкою 70+ набрали типово ${fxx(c.hiX)} від медіани, нижче 70 — ${fxx(c.loX)}. Поки що оцінкам ШІ можна вірити.` : `Рилси з оцінкою 70+ набрали типово ${fxx(c.hiX)}, а нижче 70 — ${fxx(c.loX)}. Високі оцінки поки не підтверджуються: ШІ бачить ці пари й стане суворішим.`;
+    else msg = c.n < 4 ? "Пар ще мало для висновку. Прив’язуйте опубліковані рилси до перевірок, і за кілька тижнів стане видно, чи вгадує ШІ." : "";
+    box.replaceChildren(el("h2", null, "Прогноз ШІ проти факту"), el("p", "note", `${c.n} ${c.n === 1 ? "рилс" : c.n < 5 ? "рилси" : "рилсів"} з оцінкою ШІ і реальними цифрами через 7+ днів після публікації. × — від нашої медіани ${nf.format(HP.median)} переглядів.` + (c.corr != null ? ` Збіг оцінок із фактом: ${c.corr > 0.5 ? "сильний" : c.corr > 0.2 ? "помірний" : "слабкий"} (${String(c.corr).replace(".", ",")}).` : "")));
+    if (msg) box.append(el("p", null, msg));
+    const list = el("div");
+    for (const p of c.pairs.slice(0, 12)) { const r = el("div", "cal"), m = el("div"); m.style.minWidth = "0"; m.append(el("div", "a", p.title || "Рилс"), el("div", "b", [dmy(p.date), nf.format(p.views) + " перегл.", p.awt != null ? "сер. перегляд " + f1(p.awt) + " с" : "", p.vr != null ? "3+ с " + p.vr + "%" : ""].filter(Boolean).join(" · "))); const c3 = el("div", "c", fxx(p.x)); c3.append(el("small", null, "факт")); r.append(el("span", "score-badge " + lvl(p.score), p.score), m, c3); list.append(r); }
+    box.append(list);
+  }
+
+  // Картка «Факт після публікації» у відкритій перевірці
+  function factCard(h, score) {
+    const c = el("div", "card");
+    const f = h.fact;
+    if (f) {
+      c.append(el("h2", null, "Факт після публікації"));
+      const days = f.age >= 7 ? "" : ` Рилсу лише ${f.age} дн., цифри ще ростуть: остаточно порівнюємо через 7 днів.`;
+      const good = f.x >= 1, verdict = f.x == null ? "" : score >= 70 ? (good ? "ШІ дав високу оцінку, і рилс справді набрав не менше нашої медіани." : "ШІ дав високу оцінку, але рилс набрав менше нашої медіани.") : (good ? "ШІ оцінив стримано, а рилс набрав не менше медіани." : "ШІ оцінив стримано, і рилс справді набрав менше медіани.");
+      c.append(el("p", "note", (f.cap ? "«" + f.cap.slice(0, 90) + "» · " : "") + dmy(f.date) + "." + days));
+      const g = el("div", "facts");
+      const add = (k, v, cls) => { const d = el("div"); d.append(el("div", "k", k)); const b = el("b", cls || "", v); d.append(b); g.append(d); };
+      add("Перегляди", nf.format(f.views)); add("Від медіани", fxx(f.x), f.x == null ? "" : f.x >= 1 ? "up" : "down"); add("Сер. перегляд", f.awt != null ? f1(f.awt) + " с" : "—", f.awt == null ? "" : f.awt >= 10 ? "up" : f.awt < 6 ? "down" : "");
+      add("Дивились 3+ с", f.vr != null ? f.vr + "%" : "—"); add("Поширення", nf.format(f.shares || 0)); add("Збереження", nf.format(f.saves || 0));
+      c.append(g);
+      if (verdict) c.append(el("p", null, verdict));
+      const btns = el("div", "btns"), o = el("button", "btn sm"); o.append(ico("ext"), document.createTextNode("Відкрити в Instagram")); o.onclick = () => openUrl(f.url);
+      const ch = el("button", "btn sm", "Це інший рилс"); ch.onclick = () => link(h, "", c);
+      btns.append(o, ch); c.append(btns);
+      return c;
+    }
+    c.append(el("h2", null, "Який це рилс?"), el("p", "note", "Якщо рилс уже опубліковано, виберіть його. Бот покаже реальні перегляди й утримання з Instagram і порівняє з оцінкою ШІ. Ці пари ШІ враховує в наступних перевірках."));
+    const t0 = Date.parse(h.at) || 0;
+    const reels = (HP.reels || []).filter((r) => !r.used && (!r.date || Date.parse(r.date) >= t0 - 2 * 864e5)).sort((a, b) => (b.code === h.guess) - (a.code === h.guess));
+    if (!reels.length) { c.append(el("p", "note", HP.reels && HP.reels.length ? "Після дати перевірки нових рилсів ще немає. Коли опублікуєте, вони з’являться тут після оновлення статистики (раз на добу)." : "Статистики наших рилсів ще немає. Власник має підключити Metricool в Apps Script або імпортувати аркуш mc.")); return c; }
+    const pick = el("div", "pick");
+    for (const r of reels.slice(0, 8)) {
+      const b = el("button", r.code === h.guess ? "g" : ""); b.append(el("span", "t", r.cap || r.code), el("span", "v", nf.format(r.views)), el("span", "m", dmy(r.date) + (r.code === h.guess ? " · схоже за підписом" : "")));
+      b.onclick = () => link(h, r.code, c); pick.append(b);
+    }
+    c.append(pick);
+    return c;
+  }
+  async function link(h, code, card) {
+    card.querySelectorAll("button").forEach((b) => (b.disabled = true));
+    try {
+      await TG.api("check_link", { id: h.id, code });
+      toast(code ? "Прив’язано" : "Прив’язку знято");
+      const j = await TG.api("checks"); hist = j.checks || []; HP = { reels: j.reels || [], calib: j.calib || null, median: j.median || 0 };
+      const nh = hist.find((x) => x.id === h.id) || h; card.replaceWith(factCard(nh, Math.round(Number(nh.score) || 0)));
+    } catch (e) { toast(e.code === "unknown_action" ? "Потрібен новий Code.gs" : "Не вдалося зберегти", true); card.querySelectorAll("button").forEach((b) => (b.disabled = false)); }
+  }
+
   async function loadHist() {
     const box = $("hist");
     if (!hist) box.replaceChildren(...[0, 1, 2, 3].map(() => { const r = el("div", "it"); const m = el("div"); const a = el("div", "sk skl"); a.style.width = "70%"; const b = el("div", "sk skl"); b.style.width = "40%"; m.append(a, b); const s = el("div", "sk"); s.style.cssText = "width:44px;height:44px;border-radius:12px"; r.append(s, m, el("span")); return r; }));
-    try { const j = await TG.api("checks"); hist = j.checks || []; }
+    try { const j = await TG.api("checks"); hist = j.checks || []; HP = { reels: j.reels || [], calib: j.calib || null, median: j.median || 0 }; }
     catch (e) { box.replaceChildren(emptyBox(e.code === "unknown_action" ? "Скрипт ще старої версії" : "Не вдалося завантажити історію", e.code === "unknown_action" ? "Власник має оновити код Apps Script і розгорнути нову версію." : "Перевірте інтернет.", [["Спробувати ще раз", loadHist]])); return; }
+    drawCalib();
     if (!hist.length) { box.replaceChildren(emptyBox("Перевірок ще не було", "Перевірте перший рилс, і він з’явиться тут для всієї команди.", [["Перевірити рилс", () => setTab("new")]])); return; }
     box.replaceChildren(...hist.map((h) => {
       const it = el("button", "it"), s = Math.round(Number(h.score) || 0), b = el("span", "score-badge " + lvl(s), s);
       const mid = el("span"); mid.style.minWidth = "0"; const a = el("div", "a"); a.append(el("span", null, h.title || "Рилс")); mid.append(a, el("div", "b", (h.byName || "") + " · " + new Date(h.at).toLocaleDateString("uk-UA") + (h.verdict ? " · " + h.verdict : "")));
-      it.append(b, mid, el("span")); it.onclick = () => { setTab("new"); const mt = h.meta || {}; renderResult(h.result || h, { dur: mt.dur, day: mt.day && WD.indexOf(mt.day) >= 0 ? WD.indexOf(mt.day) : null, topic: mt.topic, title: h.title }); }; return it;
+      const rc = el("span", "c");
+      if (h.fact) { rc.append(document.createTextNode(fxx(h.fact.x))); rc.append(el("small", null, h.fact.age >= 7 ? "факт" : "факт · " + h.fact.age + " дн.")); }
+      else if (h.guess) rc.append(el("span", "pill ok", "Є збіг?"));
+      it.append(b, mid, rc); it.onclick = () => { setTab("new"); const mt = h.meta || {}; renderResult(h.result || h, { dur: mt.dur, day: mt.day && WD.indexOf(mt.day) >= 0 ? WD.indexOf(mt.day) : null, topic: mt.topic, title: h.title, check: h }); }; return it;
     }));
   }
 
