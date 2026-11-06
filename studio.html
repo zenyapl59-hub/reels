@@ -307,6 +307,19 @@ body.sheet-open .sheet { transform: none; visibility: visible; transition: trans
 .seg { display: flex; gap: 6px; flex-wrap: wrap; }
 .seg button { min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); font-size: 13px; font-weight: 500; }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+/* ---------- вибір нашого старого рилса ---------- */
+.picker { border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 10px; }
+.picker .lst { display: grid; gap: 6px; max-height: 420px; overflow-y: auto; overscroll-behavior: contain; }
+.picker .pi { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; text-align: left; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); min-height: 44px; }
+.picker .pi.on { border-color: var(--accent); background: var(--accent-soft); }
+.picker .t { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.picker .v { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.picker .m { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.cands { display: grid; gap: 6px; margin-top: 8px; }
+.cands a { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; color: inherit; text-decoration: none; }
+.cands .t { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cands .v { font-size: 13px; font-weight: 600; }
+.cands .m { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
 .toolhead { display: flex; gap: 12px; align-items: flex-start; }
 .toolhead .ico { width: 28px; height: 28px; color: var(--accent); flex: none; margin-top: 2px; }
 .toolhead p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
@@ -654,7 +667,65 @@ button.pill { border: 0; cursor: pointer; }
     if (window.REELS_DATA) return res(window.REELS_DATA);
     const s = document.createElement("script"); s.src = "data.js?v=" + Math.floor(Date.now() / 36e5); s.onload = () => res(window.REELS_DATA || null); s.onerror = () => res(null); document.head.append(s);
   }));
+  let candP = null;
+  const loadCand = () => candP || (candP = new Promise((res) => {
+    if (window.CANDIDATES) return res(window.CANDIDATES);
+    const s = document.createElement("script"); s.src = "candidates.js?v=" + Math.floor(Date.now() / 36e5); s.onload = () => res(window.CANDIDATES || null); s.onerror = () => res(null); document.head.append(s);
+  }));
   const num = (v) => (v === "" || v == null ? null : Number(v));
+  const fx1 = (x) => x == null ? "—" : (x >= 10 ? Math.round(x) : (Math.round(x * 10) / 10).toString().replace(".", ",")) + "×";
+  const f1 = (v) => v == null ? "" : (Math.round(v * 10) / 10).toString().replace(".", ",");
+  const dmy = (d) => d ? String(d).split("-").reverse().join(".") : "";
+
+  // Наші старі рилси для «Переробки»: дашборд (підпис, розшифровка) + Metricool через Apps Script (утримання, поширення)
+  let oldP = null;
+  const ourOld = () => oldP || (oldP = (async () => {
+    const [D, me] = await Promise.all([loadData(), TG.api("me").catch(() => null)]);
+    const mm = {}; ((me && me.reels) || []).forEach((r) => { mm[r.code] = r; });
+    const list = [], seen = {};
+    if (D) enrich(D).rows.filter((o) => o.r.account === ZIN).forEach((o) => {
+      const m = mm[o.r.code] || {}; seen[o.r.code] = 1;
+      list.push({ code: o.r.code, url: o.r.url, date: o.r.date, views: m.views || o.v, x: m.x != null ? m.x : o.x, cap: (o.r.caption || m.cap || "").replace(/\s+/g, " "), tr: (o.r.v_text || "").replace(/\s+/g, " "), dur: num(o.r.duration_s), awt: m.awt, vr: m.vr, shares: m.shares, saves: m.saves, follows: m.follows });
+    });
+    ((me && me.reels) || []).forEach((m) => { if (!seen[m.code]) list.push({ code: m.code, url: m.url, date: m.date, views: m.views, x: m.x, cap: m.cap || "", tr: "", awt: m.awt, vr: m.vr, shares: m.shares, saves: m.saves, follows: m.follows }); });
+    return list.filter((r) => r.cap || r.tr);
+  })());
+  async function oldPicker(pk) {
+    pk.replaceChildren(el("p", "note2", "Завантажую наші рилси…"));
+    const L = await ourOld();
+    if (!L.length) { pk.replaceChildren(el("p", "note2", "Не знайшов наших рилсів з підписом чи розшифровкою. Вони з’являться після оновлення дашборда в Colab або підключення Metricool.")); return; }
+    const hasW = L.some((r) => r.awt != null), hasT = L.some((r) => r.tr);
+    const SORTS = [hasW && ["w", "Найкраще утримали"], ["x", "Найбільше переглядів"], hasT && ["t", "З розшифровкою"], ["d", "Нові"]].filter(Boolean);
+    let mode = SORTS[0][0];
+    const seg = el("div", "seg"), lst = el("div", "lst");
+    const note = el("p", "note2", "Тап — додати рилс у поле нижче. Можна вибрати кілька. ШІ бачить цифри і бере за основу те, що утримало глядача.");
+    const draw = () => {
+      seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.k === mode ? "true" : "false"));
+      let a = L.slice();
+      if (mode === "w") a = a.filter((r) => r.awt != null).sort((p, q) => q.awt - p.awt);
+      else if (mode === "t") a = a.filter((r) => r.tr).sort((p, q) => (q.x || 0) - (p.x || 0));
+      else if (mode === "x") a.sort((p, q) => (q.x || 0) - (p.x || 0));
+      else a.sort((p, q) => String(q.date).localeCompare(String(p.date)));
+      lst.replaceChildren(...a.slice(0, 25).map((r) => {
+        const b = el("button", "pi" + (pk._on && pk._on[r.code] ? " on" : "")); b.type = "button";
+        b.append(el("span", "t", (r.cap || r.tr).slice(0, 90)), el("span", "v", nf.format(r.views || 0) + " · " + fx1(r.x)),
+          el("span", "m", [dmy(r.date), r.awt != null ? "сер. перегляд " + f1(r.awt) + " с" : "", r.vr != null ? "3+ с " + r.vr + "%" : "", r.shares ? "поширень " + r.shares : "", r.tr ? "є розшифровка" : "лише підпис"].filter(Boolean).join(" · ")));
+        b.onclick = () => {
+          pk._on = pk._on || {}; if (pk._on[r.code]) return toast("Цей рилс уже додано");
+          pk._on[r.code] = 1; b.classList.add("on");
+          const stats = [nf.format(r.views || 0) + " перегл.", r.x != null ? fx1(r.x) + " від нашої медіани" : "", r.awt != null ? "сер. перегляд " + f1(r.awt) + " с" : "", r.vr != null ? "довше 3 с дивились " + r.vr + "%" : "", r.shares != null ? "поширень " + r.shares : "", r.saves != null ? "збережень " + r.saves : "", r.follows ? "підписок " + r.follows : "", r.dur ? "тривалість " + Math.round(r.dur) + " с" : ""].filter(Boolean).join(" · ");
+          const txt = "— НАШ РИЛС від " + dmy(r.date) + " (" + r.url + ")\nЦифри: " + stats + (r.cap ? "\nПідпис: " + r.cap.slice(0, 1200) : "") + (r.tr ? "\nРозшифровка: " + r.tr.slice(0, 4000) : "");
+          const ta = $("f-src"); ta.value = (ta.value.trim() ? ta.value.trim() + "\n\n" : "") + txt; ta.dispatchEvent(new Event("input"));
+          const k = $("f-kind"); if (k && !k.value.trim()) { k.value = "Наші старі рилси з цифрами Instagram"; k.dispatchEvent(new Event("input")); }
+          toast("Додано. Можна вибрати ще");
+        };
+        return b;
+      }));
+      if (!lst.childElementCount) lst.append(el("p", "note2", "Тут поки порожньо."));
+    };
+    SORTS.forEach(([k, l]) => { const b = el("button", null, l); b.type = "button"; b.dataset.k = k; b.onclick = () => { mode = k; draw(); }; seg.append(b); });
+    pk.replaceChildren(note, seg, lst); draw();
+  }
   function enrich(D) {
     if (D._en) return D._en;
     const now = Date.parse(D.last_reel || D.updated) || Date.now(), by = {};
@@ -731,10 +802,10 @@ button.pill { border: 0; cursor: pointer; }
     { g: "Планувати", id: "plan", icon: "cal", name: "План тижня", desc: "Що, коли й у якому форматі + коло залученості",
       fields: [{ k: "events", l: "Що реально сталося цього тижня", t: "area", ph: "Випадки з занять (без імен), питання мам, новини центру, цифри", req: 1 }, { k: "focus", l: "Фокус тижня (необов’язково)", t: "text", ph: "Напр.: набір у групу підготовки до школи" }],
       ctx: async () => [await marketContext(), await ideasContext(), await accountsContext()].filter(Boolean).join("\n\n") },
-    { g: "Планувати", id: "repurpose", icon: "cut", name: "Переробка", desc: "Ефір, лекція чи консультація → тиждень рилсів і каруселей",
-      fields: [{ k: "src", l: "Розшифровка або текст", t: "big", ph: "Вставте текст ефіру, статті, лекції або нотатки консультації (без імен)", req: 1 }, { k: "kind", l: "Що це", t: "text", ph: "Напр.: прямий ефір з нейропсихологом, 40 хв" }] },
-    { g: "Планувати", id: "swipe", icon: "fire", name: "Свайп-файл", desc: "Формули хуків, що зараз працюють у конкурентів, і наші версії",
-      fields: [{ k: "days", l: "Період", t: "seg", o: ["60 днів", "120 днів", "180 днів"], d: "120 днів" }, { k: "focus", l: "Тема (необов’язково)", t: "text", ph: "Напр.: істерики" }], ctx: null },
+    { g: "Планувати", id: "repurpose", icon: "cut", name: "Переробка", desc: "Наш старий рилс, ефір чи лекція → тиждень рилсів і каруселей",
+      fields: [{ k: "src", l: "Розшифровка або текст", t: "big", ph: "Натисніть «Вибрати наш старий рилс» або вставте текст ефіру, статті, лекції чи нотатки консультації (без імен)", req: 1 }, { k: "kind", l: "Що це", t: "text", ph: "Напр.: прямий ефір з нейропсихологом, 40 хв" }] },
+    { g: "Планувати", id: "swipe", icon: "fire", name: "Свайп-файл", desc: "Що залетіло в конкурентів і нових акаунтів ніші: формула хука і наша версія",
+      fields: [{ k: "from", l: "Чиї рилси", t: "seg", o: ["Усі", "Наші конкуренти", "Нові акаунти ніші"], d: "Усі" }, { k: "days", l: "Період", t: "seg", o: ["60 днів", "120 днів", "180 днів"], d: "120 днів" }, { k: "focus", l: "Тема (необов’язково)", t: "text", ph: "Напр.: істерики" }], ctx: null },
     { g: "Спілкуватись", id: "reply", icon: "chat", name: "Відповіді на коментарі", desc: "Сортування (лід, питання, хейт) і готові відповіді",
       fields: [{ k: "post", l: "Про що пост", t: "text", ph: "Напр.: рилс «Сміється, коли я кричу»" }, { k: "comments", l: "Коментарі (можна з ніками)", t: "big", ph: "@mama_olia: а якщо в 3 роки тільки мама і дай?\n@user: СПОКІЙ\n...", req: 1 }] },
     { g: "Спілкуватись", id: "dm", icon: "dm", name: "Директ", desc: "Відповідь на слово, перше повідомлення, колаборація, 2 дожими",
@@ -742,7 +813,7 @@ button.pill { border: 0; cursor: pointer; }
         { k: "thing", l: "Що надсилаємо / пропонуємо", t: "text", ph: "Напр.: чек-лист «Скільки слів має бути у 2–3 роки» + посилання" }, { k: "want", l: "Чого хочемо", t: "seg", o: ["Розмова", "Консультація", "Колаборація"], d: "Розмова" }] },
     { g: "Спілкуватись", id: "comment", icon: "pen", name: "Коментар у чужих", desc: "2 варіанти різних типів, без реклами. Можна пачкою",
       fields: [{ k: "acc", l: "Акаунт", t: "text", ph: "@акаунт" }, { k: "post", l: "Текст або опис поста. Кілька постів розділіть рядком ---", t: "big", req: 1 }, { k: "as", l: "Від кого", t: "seg", o: ["Як колеги-фахівці", "Як мама з досвідом"], d: "Як колеги-фахівці" }] },
-    { g: "Аналізувати", id: "audit", icon: "chart", name: "Аудит наших рилсів", desc: "Що спрацювало і чому, за даними аркуша ig",
+    { g: "Аналізувати", id: "audit", icon: "chart", name: "Аудит наших рилсів", desc: "Що залетіло більше за інші і чому: охоплення, утримання, поширення",
       fields: [{ k: "q", l: "Що хочете зрозуміти (необов’язково)", t: "text", ph: "Напр.: чому немає підписок" }] },
     { g: "Аналізувати", id: "profile", icon: "user", name: "Оцінка профілю", desc: "100 балів за 12 пунктами + переписані поля",
       fields: [{ k: "name", l: "Поле імені (жирний рядок)", t: "text" }, { k: "bio", l: "Біо", t: "area", req: 1 }, { k: "link", l: "Посилання", t: "text" }, { k: "hl", l: "Назви актуального", t: "text" },
@@ -788,6 +859,11 @@ button.pill { border: 0; cursor: pointer; }
       }
       f.append(lab);
     }
+    if (t.id === "repurpose") {
+      const pk = el("div", "picker"); pk.hidden = true;
+      const ob = btn("Вибрати наш старий рилс", "sm", "ov", () => { pk.hidden = !pk.hidden; if (!pk.hidden && !pk.dataset.ok) { pk.dataset.ok = "1"; oldPicker(pk); } });
+      f.prepend(ob, pk);
+    }
     if (t.id === "voice") {
       const cv = el("div", "note2", "Завантажую поточний голос…"); f.prepend(cv);
       TG.api("voice_get").then((j) => { cv.textContent = j.voice ? "Поточний голос центру (аркуш voice):\n" + j.voice : "Голос ще не задано. Вставте розшифровки або візьміть їх з дашборда."; cv.style.whiteSpace = "pre-wrap"; }).catch(() => { cv.textContent = "Не вдалося прочитати поточний голос (можливо, Code.gs ще старий)."; });
@@ -823,13 +899,18 @@ button.pill { border: 0; cursor: pointer; }
 
   // Рилси конкурентів для свайп-файлу: верхня третина (хіти) і нижня (звичайні дні)
   async function swipeRows(v) {
-    const D = await loadData(); if (!D) return { rows: [], text: "" };
-    const E = enrich(D), days = parseInt(v.days) || 120, fq = (v.focus || "").toLowerCase();
-    const pool = E.rows.filter((o) => o.r.account !== ZIN && !o.ad && o.x != null && o.age >= 3 && o.age <= days && first(o.r).length > 8 && (!fq || (o.r.topic + " " + first(o.r) + " " + o.r.caption).toLowerCase().includes(fq)));
+    const src = v.from || "Усі", useOld = src !== "Нові акаунти ніші", useNew = src !== "Наші конкуренти";
+    const [D, C] = await Promise.all([useOld ? loadData() : null, useNew ? loadCand() : null]);
+    v._cand = C;
+    if (src === "Нові акаунти ніші" && !(C && C.rows && C.rows.length)) throw new Error("Нових акаунтів ще не зібрано. Запустіть клітинку 12 «Нові акаунти в ніші» у Colab, і за 1–2 хвилини вони з’являться тут.");
+    const days = parseInt(v.days) || 120, fq = (v.focus || "").toLowerCase();
+    const all = D ? enrich(D).rows.slice() : [];
+    if (C && C.rows) { const now = Date.now(); C.rows.forEach((r) => { const vv = num(r.views) || 0; all.push({ r, v: vv, age: (now - Date.parse(r.date)) / 864e5, lr: num(r.like_rate), ad: r.promoted === "так" || (num(r.like_rate) != null && num(r.like_rate) < 0.4), x: num(r.x_median), isNew: true }); }); }
+    const pool = all.filter((o) => o.r.account !== ZIN && !o.ad && o.x != null && o.age >= 3 && o.age <= days && first(o.r).length > 8 && (!fq || ((o.r.topic || "") + " " + first(o.r) + " " + o.r.caption).toLowerCase().includes(fq)));
     const top = pool.filter((o) => o.x >= 3).sort((a, b) => b.x - a.x).slice(0, 24);
     const bottom = pool.filter((o) => o.x < 1.5).sort(() => Math.random() - 0.5).slice(0, 14);
     const rows = top.concat(bottom);
-    return { rows, text: "Вибірка: " + rows.length + " рилсів, " + new Set(rows.map((o) => o.r.account)).size + " акаунтів. Верхня частина — × ≥ 3, нижня — × < 1,5.\n" + rows.map((o) => [o.r.code, "@" + o.r.account, "×" + o.x.toFixed(1), nf.format(o.v) + " перегл.", (o.r.duration_s ? Math.round(o.r.duration_s) + " с" : ""), o.r.topic || "", "кадр: " + (o.r.v_frame || "?"), "заклик: " + (o.r.cta || ""), "хук: «" + first(o.r) + "»"].join(" | ")).join("\n") };
+    return { rows, text: "Вибірка: " + rows.length + " рилсів, " + new Set(rows.map((o) => o.r.account)).size + " акаунтів. Верхня частина — × ≥ 3, нижня — × < 1,5.\n" + rows.map((o) => [o.r.code, "@" + o.r.account + (o.isNew ? " (новий акаунт ніші)" : ""), "×" + o.x.toFixed(1), nf.format(o.v) + " перегл.", (o.r.duration_s ? Math.round(o.r.duration_s) + " с" : ""), o.r.topic || "", o.isNew ? "" : "кадр: " + (o.r.v_frame || "?"), o.isNew ? "" : "заклик: " + (o.r.cta || ""), "хук: «" + first(o.r) + "»"].join(" | ")).join("\n") };
   }
 
   // =====================================================================
@@ -1021,6 +1102,18 @@ button.pill { border: 0; cursor: pointer; }
     if (r.structure && r.structure.length) { c.append(el("h2", null, "Що спільного в хітів")); const ul = el("ul", "flags"); r.structure.forEach((s) => ul.append(el("li", null, s))); c.append(ul); }
     if (r.unclassified) c.append(el("h2", null, "Не підійшла жодна формула"), el("p", null, r.unclassified));
     box.append(c);
+    const C = v._cand;
+    if (v.from !== "Наші конкуренти") {
+      const cc = card("Нові акаунти в ніші");
+      if (C && C.accounts && C.accounts.length) {
+        cc.append(el("p", "note2", "Знайдено за хештегами " + dmy(C.updated) + ". Хіт — рилс у " + (C.hit_x || 3) + "+ рази вище звичайного рівня свого автора. Сподобався акаунт — допишіть його в ACCOUNTS у Colab, і він потрапить у дашборд з повним розбором."));
+        const w = el("div", "cands");
+        C.accounts.slice(0, 12).forEach((a) => { const l = el("a"); l.href = "https://www.instagram.com/" + a.account + "/"; l.target = "_blank"; l.rel = "noopener"; l.onclick = (e) => { if (window.TG && TG.tg && TG.tg.openLink) { e.preventDefault(); TG.tg.openLink(l.href); } };
+          l.append(el("span", "t", "@" + a.account + (a.name ? " · " + a.name : "")), el("span", "v", a.hits ? a.hits + " хіт" + (a.hits === 1 ? "" : a.hits < 5 ? "и" : "ів") : "без хітів"), el("span", "m", "медіана " + nf.format(a.median) + " перегл. · найкращий " + fx1(a.best_x) + (a.tags && a.tags.length ? " · #" + a.tags.slice(0, 3).join(" #") : ""))); w.append(l); });
+        cc.append(w);
+      } else cc.append(el("p", "note2", "Ще не зібрано. Запустіть у Colab клітинку 12 «Нові акаунти в ніші»: вона знайде акаунти нашої ніші за хештегами і їхні рилси, що залетіли."));
+      box.append(cc);
+    }
     const yc = card("Наші версії: можна знімати завтра");
     (r.yours || []).forEach((y) => {
       const s = hookScore(y.hook), d = el("div", "hook"), top = el("div", "top");
@@ -1032,7 +1125,7 @@ button.pill { border: 0; cursor: pointer; }
     box.append(yc);
     const tc = card("Рилси у вибірці"); const tw = el("div", "wrapx"), t = el("table", "tbl");
     t.innerHTML = "<thead><tr><th class=num>×</th><th>Акаунт</th><th>Формула</th><th>Перші слова</th></tr></thead>"; const tb = el("tbody");
-    (v._rows || []).forEach((o) => { const tr = el("tr"), a = el("a", null, "@" + o.r.account); a.href = o.r.url; a.target = "_blank"; const ta = el("td"); ta.append(a); tr.append(el("td", "num", o.x.toFixed(1)), ta, el("td", null, fm[o.r.code] ? "#" + fm[o.r.code] : fm[o.r.code] === 0 ? "?" : ""), el("td", null, first(o.r).slice(0, 90))); tb.append(tr); });
+    (v._rows || []).forEach((o) => { const tr = el("tr"), a = el("a", null, "@" + o.r.account + (o.isNew ? " · новий" : "")); a.href = o.r.url; a.target = "_blank"; const ta = el("td"); ta.append(a); tr.append(el("td", "num", o.x.toFixed(1)), ta, el("td", null, fm[o.r.code] ? "#" + fm[o.r.code] : fm[o.r.code] === 0 ? "?" : ""), el("td", null, first(o.r).slice(0, 90))); tb.append(tr); });
     t.append(tb); tw.append(t); tc.append(tw); box.append(tc);
   };
 
