@@ -763,7 +763,9 @@ button.pill { border: 0; cursor: pointer; }
   // ЗАПИТ ДО СЕРВЕРА
   // =====================================================================
   async function callStudio(tool, input, context, title) {
-    return TG.api("studio", { tool, input, context: context || "", title: title || "" });
+    // Якщо Apps Script не відповів за 4 хвилини, показуємо зрозумілу помилку замість вічного «Працюю…»
+    let tm; const timeout = new Promise((_, rej) => { tm = setTimeout(() => rej(Object.assign(new Error("Сервер не відповів за 4 хвилини. Найчастіше це перевантажений Gemini: спробуйте ще раз за пару хвилин або виберіть коротший період."), { code: "timeout" })), 240000); });
+    try { return await Promise.race([TG.api("studio", { tool, input, context: context || "", title: title || "" }), timeout]); } finally { clearTimeout(tm); }
   }
   function errText(e) {
     const c = e.code || "";
@@ -905,7 +907,8 @@ button.pill { border: 0; cursor: pointer; }
     if (src === "Нові акаунти ніші" && !(C && C.rows && C.rows.length)) throw new Error("Нових акаунтів ще не зібрано. Запустіть клітинку 12 «Нові акаунти в ніші» у Colab, і за 1–2 хвилини вони з’являться тут.");
     const days = parseInt(v.days) || 120, fq = (v.focus || "").toLowerCase();
     const all = D ? enrich(D).rows.slice() : [];
-    if (C && C.rows) { const now = Date.now(); C.rows.forEach((r) => { const vv = num(r.views) || 0; all.push({ r, v: vv, age: (now - Date.parse(r.date)) / 864e5, lr: num(r.like_rate), ad: r.promoted === "так" || (num(r.like_rate) != null && num(r.like_rate) < 0.4), x: num(r.x_median), isNew: true }); }); }
+    const RU = /[ыэъё]/i, UA = /[іїєґ]/i;
+    if (C && C.rows) { const now = Date.now(); C.rows.filter((r) => !RU.test(r.caption || "") || UA.test(r.caption || "")).forEach((r) => { const vv = num(r.views) || 0; all.push({ r, v: vv, age: (now - Date.parse(r.date)) / 864e5, lr: num(r.like_rate), ad: r.promoted === "так" || (num(r.like_rate) != null && num(r.like_rate) < 0.4), x: num(r.x_median), isNew: true }); }); }
     const pool = all.filter((o) => o.r.account !== ZIN && !o.ad && o.x != null && o.age >= 3 && o.age <= days && first(o.r).length > 8 && (!fq || ((o.r.topic || "") + " " + first(o.r) + " " + o.r.caption).toLowerCase().includes(fq)));
     const top = pool.filter((o) => o.x >= 3).sort((a, b) => b.x - a.x).slice(0, 24);
     const bottom = pool.filter((o) => o.x < 1.5).sort(() => Math.random() - 0.5).slice(0, 14);
