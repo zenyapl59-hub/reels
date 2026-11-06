@@ -764,7 +764,7 @@ button.pill { border: 0; cursor: pointer; }
   // =====================================================================
   async function callStudio(tool, input, context, title) {
     // Якщо Apps Script не відповів за 4 хвилини, показуємо зрозумілу помилку замість вічного «Працюю…»
-    let tm; const timeout = new Promise((_, rej) => { tm = setTimeout(() => rej(Object.assign(new Error("Сервер не відповів за 4 хвилини. Найчастіше це перевантажений Gemini: спробуйте ще раз за пару хвилин або виберіть коротший період."), { code: "timeout" })), 240000); });
+    let tm; const timeout = new Promise((_, rej) => { tm = setTimeout(() => rej(Object.assign(new Error("Сервер не відповів за 5,5 хвилини. Найчастіше це перевантажений Gemini: спробуйте ще раз за пару хвилин або виберіть коротший період."), { code: "timeout" })), 330000); });
     try { return await Promise.race([TG.api("studio", { tool, input, context: context || "", title: title || "" }), timeout]); } finally { clearTimeout(tm); }
   }
   function errText(e) {
@@ -910,10 +910,12 @@ button.pill { border: 0; cursor: pointer; }
     const RU = /[ыэъё]/i, UA = /[іїєґ]/i;
     if (C && C.rows) { const now = Date.now(); C.rows.filter((r) => !RU.test(r.caption || "") || UA.test(r.caption || "")).forEach((r) => { const vv = num(r.views) || 0; all.push({ r, v: vv, age: (now - Date.parse(r.date)) / 864e5, lr: num(r.like_rate), ad: r.promoted === "так" || (num(r.like_rate) != null && num(r.like_rate) < 0.4), x: num(r.x_median), isNew: true }); }); }
     const pool = all.filter((o) => o.r.account !== ZIN && !o.ad && o.x != null && o.age >= 3 && o.age <= days && first(o.r).length > 8 && (!fq || ((o.r.topic || "") + " " + first(o.r) + " " + o.r.caption).toLowerCase().includes(fq)));
-    const top = pool.filter((o) => o.x >= 3).sort((a, b) => b.x - a.x).slice(0, 24);
-    const bottom = pool.filter((o) => o.x < 1.5).sort(() => Math.random() - 0.5).slice(0, 14);
+    // Не більше ~22 рилсів: Gemini розбирає кожен, і на 30+ відповідь не встигає за ліміт Apps Script (6 хв)
+    const topAll = pool.filter((o) => o.x >= 3).sort((a, b) => b.x - a.x), cnt = {}, top = [];
+    for (const o of topAll) { const k = o.r.account; if ((cnt[k] || 0) >= 3) continue; cnt[k] = (cnt[k] || 0) + 1; top.push(o); if (top.length >= 14) break; } // не більше 3 хітів від одного акаунта
+    const bottom = pool.filter((o) => o.x < 1.5).sort(() => Math.random() - 0.5).slice(0, 8);
     const rows = top.concat(bottom);
-    return { rows, text: "Вибірка: " + rows.length + " рилсів, " + new Set(rows.map((o) => o.r.account)).size + " акаунтів. Верхня частина — × ≥ 3, нижня — × < 1,5.\n" + rows.map((o) => [o.r.code, "@" + o.r.account + (o.isNew ? " (новий акаунт ніші)" : ""), "×" + o.x.toFixed(1), nf.format(o.v) + " перегл.", (o.r.duration_s ? Math.round(o.r.duration_s) + " с" : ""), o.r.topic || "", o.isNew ? "" : "кадр: " + (o.r.v_frame || "?"), o.isNew ? "" : "заклик: " + (o.r.cta || ""), "хук: «" + first(o.r) + "»"].join(" | ")).join("\n") };
+    return { rows, text: "Вибірка: " + rows.length + " рилсів, " + new Set(rows.map((o) => o.r.account)).size + " акаунтів. Верхня частина — × ≥ 3, нижня — × < 1,5.\n" + rows.map((o) => [o.r.code, "@" + o.r.account + (o.isNew ? " (новий акаунт ніші)" : ""), "×" + o.x.toFixed(1), nf.format(o.v) + " перегл.", (o.r.duration_s ? Math.round(o.r.duration_s) + " с" : ""), o.r.topic || "", o.isNew ? "" : "кадр: " + (o.r.v_frame || "?"), o.isNew ? "" : "заклик: " + (o.r.cta || ""), "хук: «" + first(o.r).replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, "").replace(/#\S+/g, "").trim().slice(0, 110) + "»"].join(" | ")).join("\n") };
   }
 
   // =====================================================================
